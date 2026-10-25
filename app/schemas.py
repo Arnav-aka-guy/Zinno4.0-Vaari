@@ -219,6 +219,10 @@ class NotServedIn(BaseModel):
     note: str | None = None
 
 
+class MessageOpenedIn(BaseModel):
+    channel: str  # "wa_link" | "tel"
+
+
 # --- Slot and Evidence Schemas ---
 
 class LocationBrief(BaseModel):

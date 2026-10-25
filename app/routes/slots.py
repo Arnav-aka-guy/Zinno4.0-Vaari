@@ -1,18 +1,19 @@
-"""API routes for slot lifecycle and evidence capture (Contract Section 11)."""
+"""API routes for slot lifecycle, evidence capture and messaging (Contract Section 11)."""
 
 from datetime import date
 from typing import Any
-from fastapi import APIRouter, Depends, File, Form, Header, Query, UploadFile
+from fastapi import APIRouter, Depends, File, Form, Header, Query, Response, UploadFile, status
 from sqlalchemy.orm import Session
 from app import clock
-from app.auth import verify_slot_auth
+from app.auth import require_passcode, verify_slot_auth
 from app.config import settings
 from app.db import get_db
 from app.errors import VaariError
 from app.evidence.lifecycle import done_slot, not_served_slot, start_slot
-from app.models import Machine, Slot
+from app.messaging.render import render_slot_message
+from app.models import Centre, Farmer, Machine, MessageLog, Plot, Request, Slot
 from app.routes.common import serialize_slot
-from app.schemas import EvidenceDetail, NotServedIn, SlotEvidenceOut, SlotOut
+from app.schemas import EvidenceDetail, MessageOpenedIn, NotServedIn, SlotEvidenceOut, SlotOut
 
 router = APIRouter(prefix="/slots", tags=["slots"])
 
@@ -47,6 +48,90 @@ def list_slots(
 
     slots = query.order_by(Slot.service_date.asc(), Slot.seq.asc()).all()
     return [serialize_slot(session, s, include_link_token=True) for s in slots]
+
+
+@router.get("/{id}/message")
+def get_slot_message(
+    id: int,
+    session: Session = Depends(get_db),
+    _passcode: str = Depends(require_passcode),
+) -> dict[str, Any]:
+    slot = session.query(Slot).filter_by(id=id).first()
+    if slot is None:
+        raise VaariError("NOT_FOUND", "Slot not found.", 404)
+
+    req = session.query(Request).filter_by(id=slot.request_id).one()
+    farmer = session.query(Farmer).filter_by(id=req.farmer_id).one()
+    plot = session.query(Plot).filter_by(id=req.plot_id).one()
+    machine = session.query(Machine).filter_by(id=slot.machine_id).one()
+    centre = session.query(Centre).filter_by(id=machine.centre_id).one()
+
+    rendered = render_slot_message(
+        slot=slot,
+        req=req,
+        farmer=farmer,
+        plot=plot,
+        machine=machine,
+        centre=centre,
+    )
+
+    # Log message rendered
+    mlog = MessageLog(
+        slot_id=slot.id,
+        farmer_id=farmer.id,
+        channel="screen",
+        template="v1",
+        body=rendered["body"],
+        status="rendered",
+        created_at=clock.now_utc(),
+    )
+    session.add(mlog)
+    session.commit()
+
+    return rendered
+
+
+@router.post("/{id}/message/opened", status_code=status.HTTP_204_NO_CONTENT)
+def message_opened(
+    id: int,
+    payload: MessageOpenedIn,
+    session: Session = Depends(get_db),
+    _passcode: str = Depends(require_passcode),
+):
+    slot = session.query(Slot).filter_by(id=id).first()
+    if slot is None:
+        raise VaariError("NOT_FOUND", "Slot not found.", 404)
+
+    req = session.query(Request).filter_by(id=slot.request_id).one()
+    farmer = session.query(Farmer).filter_by(id=req.farmer_id).one()
+    plot = session.query(Plot).filter_by(id=req.plot_id).one()
+    machine = session.query(Machine).filter_by(id=slot.machine_id).one()
+    centre = session.query(Centre).filter_by(id=machine.centre_id).one()
+
+    rendered = render_slot_message(
+        slot=slot,
+        req=req,
+        farmer=farmer,
+        plot=plot,
+        machine=machine,
+        centre=centre,
+    )
+
+    now = clock.now_utc()
+    slot.notified_at = now
+
+    mlog = MessageLog(
+        slot_id=slot.id,
+        farmer_id=farmer.id,
+        channel=payload.channel,
+        template="v1",
+        body=rendered["body"],
+        status="opened",
+        created_at=now,
+    )
+    session.add(mlog)
+    session.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.post("/{id}/start", response_model=SlotEvidenceOut)
