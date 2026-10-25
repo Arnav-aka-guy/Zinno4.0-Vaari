@@ -214,6 +214,11 @@ class PlotOut(BaseModel):
     geojson: str | None = None
 
 
+class NotServedIn(BaseModel):
+    reason: NotServedReason
+    note: str | None = None
+
+
 # --- Slot and Evidence Schemas ---
 
 class LocationBrief(BaseModel):
