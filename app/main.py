@@ -1,13 +1,24 @@
 """Main FastAPI application for Vaari."""
 
+from contextlib import asynccontextmanager
 from pathlib import Path
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from app.db import Base, get_engine
 from app.errors import setup_error_handlers
+import app.models  # ensure models are registered
 from app.routes.health import router as health_router
 
-app = FastAPI(title="Vaari Backend", version="0.1")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Create tables at startup
+    Base.metadata.create_all(bind=get_engine())
+    yield
+
+
+app = FastAPI(title="Vaari Backend", version="0.1", lifespan=lifespan)
 
 # Configure error handlers
 setup_error_handlers(app)
@@ -23,7 +34,6 @@ if web_dist.exists():
     @app.get("/{full_path:path}")
     async def spa_fallback(full_path: str):
         if full_path.startswith("api/"):
-            # Do not intercept API routes
             pass
         file_path = web_dist / full_path
         if file_path.exists() and file_path.is_file():
