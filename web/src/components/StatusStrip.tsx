@@ -1,22 +1,19 @@
 import { useEffect, useState } from 'react';
-import { getHealth, ApiError } from '../api';
+import { getHealth } from '../api';
+import Badge from './Badge';
 import type { Health } from '../types';
 
 export default function StatusStrip() {
   const [health, setHealth] = useState<Health | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [unreachable, setUnreachable] = useState(false);
 
   const fetchStatus = async () => {
     try {
       const data = await getHealth();
       setHealth(data);
-      setError(null);
-    } catch (err) {
-      if (err instanceof ApiError && err.error_code === 'NETWORK_DOWN') {
-        setError('Server unreachable (NETWORK_DOWN)');
-      } else {
-        setError('Failed to fetch system status');
-      }
+      setUnreachable(false);
+    } catch {
+      setUnreachable(true);
     }
   };
 
@@ -26,41 +23,71 @@ export default function StatusStrip() {
     return () => clearInterval(interval);
   }, []);
 
+  if (unreachable) {
+    return (
+      <div className="status-strip status-strip-down" id="status-strip" role="region" aria-label="System Status">
+        <div className="status-strip-inner">
+          <span className="status-dot dot-error" />
+          <strong className="status-label-down">Server not reachable</strong>
+        </div>
+      </div>
+    );
+  }
+
+  // Dependency status calculations
+  const dbStatus = health?.database === 'connected' ? 'ok' : (health?.database || 'down');
+  const dbTone = dbStatus === 'ok' ? 'pill-green' : 'pill-red';
+
+  const readerStatus = health?.reader === 'hosted' ? 'ok' : health?.reader === 'mock' ? 'mock' : 'not built';
+  const readerTone = readerStatus === 'ok' ? 'pill-green' : readerStatus === 'mock' ? 'pill-amber' : 'pill-grey';
+
+  const msgStatus = health?.messaging || 'screen+wa_link';
+  const msgTone = msgStatus === 'live' ? 'pill-green' : msgStatus === 'mock' ? 'pill-amber' : 'pill-grey';
+
+  const satStatus = health?.satellite === 'live' ? 'ok' : health?.satellite === 'mock' ? 'mock' : 'disabled';
+  const satTone = satStatus === 'ok' ? 'pill-green' : satStatus === 'mock' ? 'pill-amber' : 'pill-grey';
+
   return (
     <div className="status-strip" id="status-strip" role="region" aria-label="System Status">
       <div className="status-strip-inner">
-        {error ? (
-          <div className="status-item status-error">
-            <span className="status-dot dot-error" />
-            <span className="status-label">{error}</span>
-          </div>
-        ) : health ? (
+        {health ? (
           <>
             <div className="status-item">
-              <span className={`status-dot ${health.status === 'ok' ? 'dot-ok' : 'dot-warn'}`} />
+              <span className="status-dot dot-ok" />
               <span className="status-label">System: <strong>{health.status}</strong></span>
             </div>
-            <div className="status-item">
-              <span className="status-label">DB: {health.database}</span>
+
+            <div className={`dep-pill ${dbTone}`} id="dep-pill-db">
+              <span className="dep-name">Database:</span>
+              <span className="dep-val">{dbStatus}</span>
             </div>
-            <div className="status-item">
-              <span className="status-label">Reader: {health.reader}</span>
+
+            <div className={`dep-pill ${readerTone}`} id="dep-pill-reader">
+              <span className="dep-name">Reader:</span>
+              <span className="dep-val">{readerStatus}</span>
             </div>
-            <div className="status-item">
-              <span className="status-label">Messages: {health.messaging}</span>
+
+            <div className={`dep-pill ${msgTone}`} id="dep-pill-messaging">
+              <span className="dep-name">Messaging:</span>
+              <span className="dep-val">{msgStatus}</span>
             </div>
-            <div className="status-item">
-              <span className="status-label">Today: {health.today}</span>
+
+            <div className={`dep-pill ${satTone}`} id="dep-pill-satellite">
+              <span className="dep-name">Satellite:</span>
+              <span className="dep-val">{satStatus}</span>
             </div>
-            {health.demo_clock && (
-              <div className="badge badge-warning" id="demo-clock-badge">
-                DEMO CLOCK
+
+            {health.demo_clock ? (
+              <Badge name="demo clock" detail={health.today} id="demo-clock-badge" />
+            ) : (
+              <div className="status-item text-muted text-xs">
+                <span>Today: {health.today}</span>
               </div>
             )}
           </>
         ) : (
           <div className="status-item">
-            <span className="status-label">Checking status…</span>
+            <span className="status-label">Checking system status…</span>
           </div>
         )}
       </div>

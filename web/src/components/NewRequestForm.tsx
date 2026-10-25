@@ -1,6 +1,7 @@
 import { useState, useRef, type FormEvent, type ChangeEvent } from 'react';
 import { createRequest, ApiError } from '../api';
 import { friendlyError } from '../errors';
+import Badge from './Badge';
 import type { RequestOut } from '../types';
 
 interface Props {
@@ -300,7 +301,7 @@ export default function NewRequestForm({ villages, onSuccess }: Props) {
               <span>Data sharing consent</span>
             </label>
           </div>
-          <span className="badge badge-neutral consent-badge">consent simulated in this demo</span>
+          <Badge name="consent simulated" detail="demo" />
         </div>
 
         {/* Submit */}

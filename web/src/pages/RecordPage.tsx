@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { getRecord, verifyRecord, ApiError } from '../api';
 import { friendlyError } from '../errors';
 import { formatIST } from '../utils/image';
+import Badge from '../components/Badge';
 import type { RecordOut, RecordVerify } from '../types';
 
 export default function RecordPage() {
@@ -162,9 +163,7 @@ export default function RecordPage() {
         {record.badges && record.badges.length > 0 && (
           <div className="receipt-badges-row" id="receipt-badges">
             {record.badges.map((b) => (
-              <span key={b} className="badge badge-warning">
-                {b}
-              </span>
+              <Badge key={b} name={b} />
             ))}
           </div>
         )}
@@ -238,7 +237,15 @@ export default function RecordPage() {
                 </div>
                 <div>
                   <span className="attr-label">Position State</span>
-                  <p className="text-capitalize">{record.start_position.replace('_', ' ')}</p>
+                  <div className="mt-1">
+                    {record.start_position === 'not_checked' ? (
+                      <Badge name="position not checked" />
+                    ) : record.start_position === 'not_given' ? (
+                      <Badge name="position self-reported" />
+                    ) : (
+                      <p className="text-capitalize">{record.start_position.replace('_', ' ')}</p>
+                    )}
+                  </div>
                 </div>
                 <div>
                   <span className="attr-label">Field Photo</span>
@@ -260,7 +267,15 @@ export default function RecordPage() {
                 </div>
                 <div>
                   <span className="attr-label">Position State</span>
-                  <p className="text-capitalize">{record.done_position.replace('_', ' ')}</p>
+                  <div className="mt-1">
+                    {record.done_position === 'not_checked' ? (
+                      <Badge name="position not checked" />
+                    ) : record.done_position === 'not_given' ? (
+                      <Badge name="position self-reported" />
+                    ) : (
+                      <p className="text-capitalize">{record.done_position.replace('_', ' ')}</p>
+                    )}
+                  </div>
                 </div>
                 <div>
                   <span className="attr-label">Field Photo</span>

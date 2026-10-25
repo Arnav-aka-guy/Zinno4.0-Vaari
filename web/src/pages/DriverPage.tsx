@@ -9,6 +9,7 @@ import {
 } from '../api';
 import { friendlyError } from '../errors';
 import { downscaleImage, getCurrentPosition, formatIST } from '../utils/image';
+import Badge from '../components/Badge';
 import type { DriverResponse, SlotOut, SlotEvidenceOut } from '../types';
 
 const NOT_SERVED_REASONS = [
@@ -387,7 +388,7 @@ export default function DriverPage() {
                         : 'not given'}
                     </strong>
                     {positionSelfReported && (
-                      <span className="badge badge-warning mt-1">position self-reported</span>
+                      <Badge name="position self-reported" className="mt-1" />
                     )}
                   </div>
 

@@ -188,6 +188,58 @@ body {
   font-weight: 500;
 }
 
+.status-strip-down {
+  background: #fef2f2 !important;
+  border-color: #f87171 !important;
+  color: #991b1b !important;
+}
+
+.status-label-down {
+  color: #991b1b;
+  font-weight: 700;
+  font-size: 0.875rem;
+}
+
+.dep-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.dep-name {
+  color: #475569;
+  font-weight: 500;
+}
+
+.pill-green {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.pill-amber {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+.pill-grey {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+.pill-red {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+}
+
 /* Desk Top Header & Metrics Bar */
 .desk-container {
   display: flex;
@@ -1419,13 +1471,17 @@ body {
   border-radius: var(--radius-sm);
 }
 
-/* Huge Cab Buttons */
+/* Huge Cab Buttons (min 56px height for touch) */
 .btn-cab-start {
   background: #15803d;
   color: #ffffff;
   font-size: 1.35rem;
   font-weight: 800;
   padding: 1.1rem;
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border-radius: var(--radius-lg);
   border: none;
   cursor: pointer;
@@ -1446,6 +1502,10 @@ body {
   font-size: 1.35rem;
   font-weight: 800;
   padding: 1.1rem;
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border-radius: var(--radius-lg);
   border: none;
   cursor: pointer;

@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import StatusStrip from '../components/StatusStrip';
+import Badge from '../components/Badge';
 import NewRequestForm from '../components/NewRequestForm';
 import RequestDetailPanel from '../components/RequestDetailPanel';
 import WillMissTab from '../components/WillMissTab';
@@ -319,9 +320,7 @@ export default function DeskPage() {
                       </td>
                       <td>
                         {r.badges?.map(b => (
-                          <span key={b} className="badge badge-warning">
-                            {b}
-                          </span>
+                          <Badge key={b} name={b} />
                         ))}
                       </td>
                     </tr>

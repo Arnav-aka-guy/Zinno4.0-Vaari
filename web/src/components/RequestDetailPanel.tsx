@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getSlotMessage, markMessageOpened, patchRequest, deleteRequest, ApiError } from '../api';
 import { friendlyError } from '../errors';
+import Badge from './Badge';
 import type { RequestOut, SlotMessage } from '../types';
 
 interface Props {
@@ -59,13 +60,13 @@ export default function RequestDetailPanel({ request, onClose, onUpdate }: Props
       setMessageData(data);
     } catch (err) {
       if (err instanceof ApiError && err.error_code === 'NETWORK_DOWN') {
-        setMessageError('Not sent: copy or call (network unavailable)');
-        // Fallback demo text
-        setMessageData({
-          slot_id: request.slot.id,
+        setMessageError('Not sent: copy or call');
+        // Render from last response if present, else fallback Punjabi template
+        setMessageData(prev => prev ?? {
+          slot_id: request.slot!.id,
           language: 'pa',
-          body: `ਸਤ ਸ੍ਰੀ ਅਕਾਲ ਜੀ। ਤੁਹਾਡੇ ${request.village} ਵਾਲੇ ${request.acres} ਏਕੜ ਖੇਤ ਲਈ ${request.slot.machine_name} ${request.slot.service_date} ਨੂੰ ਆਵੇਗੀ। ਕੋਈ ਗੱਲ ਹੋਵੇ ਤਾਂ ਫ਼ੋਨ ਕਰੋ।`,
-          body_en: `Sat Sri Akal ji. ${request.slot.machine_name} will come on ${request.slot.service_date} for your ${request.acres}-acre field in ${request.village}.`,
+          body: `ਸਤ ਸ੍ਰੀ ਅਕਾਲ ਜੀ। ਤੁਹਾਡੇ ${request.village} ਵਾਲੇ ${request.acres} ਏਕੜ ਖੇਤ ਲਈ ${request.slot!.machine_name} ${request.slot!.service_date} ਨੂੰ ਆਵੇਗੀ। ਕੋਈ ਗੱਲ ਹੋਵੇ ਤਾਂ ਫ਼ੋਨ ਕਰੋ।`,
+          body_en: `Sat Sri Akal ji. ${request.slot!.machine_name} will come on ${request.slot!.service_date} for your ${request.acres}-acre field in ${request.village}.`,
           wa_link: `https://wa.me/91${request.farmer.phone}`,
           tel_link: `tel:+91${request.farmer.phone}`,
           service_code: '----',
@@ -173,9 +174,7 @@ export default function RequestDetailPanel({ request, onClose, onUpdate }: Props
           {request.badges && request.badges.length > 0 && (
             <div className="panel-badges">
               {request.badges.map(b => (
-                <span key={b} className="badge badge-warning">
-                  {b}
-                </span>
+                <Badge key={b} name={b} />
               ))}
             </div>
           )}
