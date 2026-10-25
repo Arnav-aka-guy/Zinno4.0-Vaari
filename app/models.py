@@ -26,7 +26,7 @@ class JsonText(TypeDecorator):
     def process_bind_param(self, value, dialect):
         if value is None:
             return None
-        return json.dumps(value, ensure_ascii=False)
+        return json.dumps(value, ensure_ascii=False, default=str)
 
     def process_result_value(self, value, dialect):
         if value is None:

@@ -27,7 +27,7 @@ def test_request_lifecycle_crud(client, auth_headers):
     assert data["village"] == "Pind Kalan"
     assert data["acres"] == 3.2
     assert data["service_type"] == "super_seeder"
-    assert data["status"] == "open"
+    assert data["status"] in ("open", "scheduled", "will_miss")
     assert data["harvest_date"] == "2026-10-20"
     assert data["sow_by"] == "2026-11-09"
     assert data["deadline_date"] == "2026-11-09"

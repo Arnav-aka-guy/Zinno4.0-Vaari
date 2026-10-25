@@ -13,6 +13,7 @@ from app.routes.health import router as health_router
 from app.routes.machines import router as machines_router
 from app.routes.plots import router as plots_router
 from app.routes.requests import router as requests_router
+from app.routes.schedule import router as schedule_router
 
 
 @asynccontextmanager
@@ -37,6 +38,7 @@ app.include_router(health_router, prefix="/api")
 app.include_router(requests_router, prefix="/api")
 app.include_router(machines_router, prefix="/api")
 app.include_router(plots_router, prefix="/api")
+app.include_router(schedule_router, prefix="/api")
 
 # Serve frontend build if available (Phase 2)
 web_dist = Path(__file__).parent.parent / "web" / "dist"

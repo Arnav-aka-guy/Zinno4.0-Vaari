@@ -4,14 +4,17 @@ from sqlalchemy.orm import Session
 from app import clock
 from app.config import settings
 from app.enums import from_x100
-from app.models import Centre, Farmer, Machine, Plot, Request, Slot
+from app.models import Centre, Farmer, Machine, Plot, Request, ServiceRecord, Slot
 from app.schemas import (
     ExplanationBrief,
     FarmerBrief,
+    LocationBrief,
+    MachineBrief,
     MachineOut,
     PlotOut,
     RequestOut,
     SlotBrief,
+    SlotOut,
 )
 
 
@@ -107,4 +110,37 @@ def serialize_plot(plot: Plot) -> PlotOut:
         centroid_lon=plot.centroid_lon,
         location_source=plot.location_source,
         geojson=plot.geojson,
+    )
+
+
+def serialize_slot(session: Session, slot: Slot, include_link_token: bool = True) -> SlotOut:
+    machine = session.query(Machine).filter_by(id=slot.machine_id).first()
+    req = session.query(Request).filter_by(id=slot.request_id).first()
+    farmer = session.query(Farmer).filter_by(id=req.farmer_id).first() if req else None
+    plot = session.query(Plot).filter_by(id=req.plot_id).first() if req else None
+    service_rec = session.query(ServiceRecord).filter_by(slot_id=slot.id).first()
+
+    loc_lat = plot.pin_lat if plot else None
+    loc_lon = plot.pin_lon if plot else None
+    loc_source = plot.location_source if plot else "none"
+
+    return SlotOut(
+        id=slot.id,
+        seq=slot.seq,
+        status=slot.status,
+        service_date=slot.service_date,
+        machine=MachineBrief(id=machine.id if machine else 0, name=machine.name if machine else "Unknown"),
+        request_id=slot.request_id,
+        farmer_name=farmer.name if farmer else None,
+        village=plot.village_name if plot else "",
+        acres=from_x100(req.acres_x100) if req else 0.0,
+        deadline_date=req.deadline_date if req else None,
+        location=LocationBrief(lat=loc_lat, lon=loc_lon, source=loc_source),
+        est_distance_km=slot.est_distance_km,
+        link_token=slot.link_token if include_link_token else None,
+        needs_review=slot.needs_review,
+        flags=slot.flags_json or [],
+        started_at=clock.iso_z(slot.started_at) if slot.started_at else None,
+        done_at=clock.iso_z(slot.done_at) if slot.done_at else None,
+        record_token=service_rec.token if service_rec else None,
     )
