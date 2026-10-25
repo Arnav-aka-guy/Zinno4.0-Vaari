@@ -57,6 +57,8 @@ def task_setup() -> int:
         print("Installing Playwright chromium...")
         npx_cmd = "npx.cmd" if os.name == "nt" else "npx"
         run_cmd([npx_cmd, "playwright", "install", "chromium"], cwd=web_dir)
+        print("Building web assets...")
+        task_build_web()
     return 0
 
 

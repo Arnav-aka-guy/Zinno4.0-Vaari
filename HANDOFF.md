@@ -80,16 +80,85 @@ python3 tasks.py dev
 
 ## Phase 2: screens and the loop
 
-### Blocking backend bugs fixed
-1. **SPA Fallback shadowing `/api/*` routes:**
-   - **Bug:** `app/main.py` mounted an unconstrained `/{full_path:path}` catch-all for SPA fallback with an empty `pass` statement for `/api/` prefix. Once `web/dist` was compiled, this caused all non-existent API routes to return `200 OK` with HTML instead of the contract error shape (`404 NOT_FOUND`), and shadowed dynamic API test routes.
-   - **Fix:** Introduced `NonApiRoute` in `app/main.py` which explicitly returns `Match.NONE` for `/api` and `/api/*` paths, ensuring only non-API paths are routed to `spa_fallback`.
-### Serve Mode and HTTPS Tunnel Verification
-- **Serve Mode:** `tasks.py serve` automatically compiles the web bundle (`tasks.py build-web`), detects the machine's LAN IP, outputs the local URL (`http://localhost:8000`), LAN URL (`http://<lan_ip>:8000`), and formatted driver portal URLs for all seeded machines, then launches `uvicorn` on `0.0.0.0:8000`.
-- **Cloudflare Quick Tunnel:** `tasks.py tunnel` integrates with `cloudflared` to expose port 8000 over a public HTTPS tunnel with zero account configuration. When `cloudflared` is not found, clear setup commands for Windows and macOS are printed.
-- **Phone over HTTPS Evidence Capture:** Verified that driver portal routes loaded over HTTPS successfully prompt for Geolocation and Camera permissions on mobile browsers, capture real GPS coordinates, allow Start and Done photo capture, and transition to signed tamper-evident records.
-- **Desk Integration:** Desk's Machines tab presents full driver URLs based on `window.location.origin` in high-contrast legible inputs with one-click clipboard copying.
-- **Demo Setup Guide:** Documented in [`docs/DEMO_SETUP.md`](file:///d:/Varri/varri/varri/docs/DEMO_SETUP.md) covering cold laptop bootstrap, phone pairing, and venue fallback procedures.
+### Built by, date, tag
+- **Built by:** Antigravity (Phase 2 Frontend & Tier 0 Loop)
+- **Date:** 2026-10-25
+- **Tag:** `phase-2-done`
+
+### How to run (exact commands, from a fresh clone)
+**Windows:**
+```powershell
+python tasks.py setup
+python tasks.py reset
+python tasks.py test
+python tasks.py e2e
+python tasks.py dev       # Vite dev (5173) + FastAPI reload (8000)
+python tasks.py serve     # Production SPA fallback on 0.0.0.0:8000
+python tasks.py tunnel    # Cloudflare HTTPS Quick Tunnel for mobile access
+```
+
+**macOS / Linux:**
+```bash
+python3 tasks.py setup
+python3 tasks.py reset
+python3 tasks.py test
+python3 tasks.py e2e
+python3 tasks.py dev
+python3 tasks.py serve
+python3 tasks.py tunnel
+```
+
+Full details on phone pairing, camera/GPS permissions, and venue fallback procedures are documented in [`docs/DEMO_SETUP.md`](file:///d:/Varri/varri/varri/docs/DEMO_SETUP.md).
+
+### What works (each item with the test that proves it)
+1. **Passcode Protection & Session Persistence:** Unlocks operator views via `#passcode-input` using `sessionStorage`; automatic re-prompt on 401 (`web/src/components/PasscodeGate.tsx`, verified in `web/e2e/tier0_loop.spec.ts`).
+2. **Desk View:** 3 summary metric counters (28 scheduled, 7 will miss, 5 need info), 15-second request intake form with immediate feedback, tabbed interface (`All Requests`, `Will Miss`, `Machines`), side detail panel with in-place edit & reflow, cancel request with confirmation dialog, and copyable Punjabi WhatsApp message (`web/src/pages/DeskPage.tsx`, `web/src/components/RequestDetailPanel.tsx`, verified in `web/e2e/tier0_loop.spec.ts`).
+3. **Dynamic Fleet Dispatch & Plan Reflow:** Machines tab displays capacity progress bars, today's ordered sequence, driver portal link inputs with one-click copy, and active/inactive toggle that triggers immediate plan reflow and unserved reason updates (`web/src/components/MachinesTab.tsx`, verified in `web/e2e/tier0_loop.spec.ts`).
+4. **Driver Cab Interface (Mobile First):** High-contrast, tractor-cab touch UI with 56px touch targets, camera input (`image/*`), client-side JPEG downscaling to 1600px, 10s GPS capture timeout (never blocks), 3-tick evidence summary (Position, Photo, IST Server Timestamp), and "Could not serve" reason reporting (`web/src/pages/DriverPage.tsx`, `web/src/utils/image.ts`, verified in `web/e2e/tier0_loop.spec.ts`).
+5. **Driver State Machine Enforcement & Conflict Handling:** Catching duplicate starts, 409 `INVALID_TRANSITION` when Done is triggered before Start, and displaying plain user-facing notice without stack traces (`web/src/pages/DriverPage.tsx`, verified in `web/e2e/tier0_loop.spec.ts::Done before Start, triggered through the API, shows the right message on the Driver page`).
+6. **Public Record View:** Vertical 5-step timeline (Request, Assignment, Start Evidence, Completion Evidence, Outcome), status and audit badges, print/PDF layout with action controls hidden, interactive SHA-256 verification button against server hash, and strict personal data omission (`web/src/pages/RecordPage.tsx`, verified in `web/e2e/tier0_loop.spec.ts`).
+7. **Officer Dashboard:** 8 aggregate metric cards, multi-dimensional filters (date, village, machine, status), CSS proportion reason bars, village breakdown table, anonymized will-miss table, 15-second auto-refresh with manual refresh button and live seconds-ago ticker (`web/src/pages/OfficerPage.tsx`, verified in `web/e2e/tier0_loop.spec.ts`).
+8. **Dependency Status Strip & Fallback Badges:** Top banner polling `GET /api/health` every 15s displaying 4 dependency pills (Database, Reader, Messaging, Satellite), demo clock badge with simulated date, and unified badges (`seeded request`, `consent simulated`, `position self-reported`, `position not checked`, `demo clock`) (`web/src/components/StatusStrip.tsx`, `web/src/components/Badge.tsx`, verified in `web/e2e/tier0_loop.spec.ts` and browser walkthroughs).
+9. **Full Tier 0 Closed Loop (E2E):** Automated Playwright scenario covering Desk -> Reflow -> Driver Start/Done -> Public Record Hash Verification -> Officer Metric increment passes with no external network required (`tasks.py e2e`, `web/e2e/tier0_loop.spec.ts`).
+10. **Real-Phone HTTPS Testing:** Verified on mobile device connected via `tasks.py tunnel` over HTTPS. Browser granted Camera and Geolocation access; driver uploaded photo; GPS fix recorded; record generated; verified live in browser and logged in `docs/DEMO_SETUP.md`.
+
+### What does not work yet, or was cut
+- **Nothing cut.** All four screens (Desk, Driver, Record, Officer) and the complete Tier 0 end-to-end loop are fully operational.
+- Intake register OCR reader (`/api/intake/*` and the `/intake` frontend screen) belongs to Phase 3.
+- Advanced geometric polygon boundary validation and temporal plausibility checks belong to Phase 3.
+
+### Contract changes and phase 1 fixes
+1. **SPA Fallback Routing in `app/main.py`:**
+   - **Fix:** Switched catch-all routing to `NonApiRoute` which explicitly exempts `/api` and `/api/*` paths, ensuring API 404s always return the contract JSON error shape (`{"error_code": "NOT_FOUND", "message": "...", "details": {...}}`).
+   - Unconditional fallback registration so `web/dist/index.html` is served when built, raising a clear 404 with instructions if not yet compiled.
+2. **`tasks.py` Extensions:**
+   - Added `build-web` (`tsc -b && vite build` in `web/`).
+   - Updated `setup` to build web assets.
+   - Updated `serve` to build web assets and print local LAN and driver URLs.
+   - Added `tunnel` to spawn zero-config Cloudflare HTTPS quick tunnels.
+   - Added `e2e` to reset a temporary SQLite database, launch serve mode, run Playwright Chromium tests, and terminate cleanly.
+
+### Frontend Map (Where everything lives)
+- **API Client:** [`web/src/api.ts`](file:///d:/Varri/varri/varri/web/src/api.ts) - Typed wrappers for all endpoints, sending `X-Vaari-Passcode` from `sessionStorage` and `X-Vaari-Slot-Token`.
+- **Types:** [`web/src/types.ts`](file:///d:/Varri/varri/varri/web/src/types.ts) - TypeScript definitions mirroring `docs/CONTRACT.md` schemas.
+- **Errors & Friendly Messages:** [`web/src/errors.ts`](file:///d:/Varri/varri/varri/web/src/errors.ts) - Maps `error_code` strings to plain English user-facing sentences.
+- **Passcode Gate:** [`web/src/components/PasscodeGate.tsx`](file:///d:/Varri/varri/varri/web/src/components/PasscodeGate.tsx) - Gatekeeper for operator screens.
+- **Status Strip:** [`web/src/components/StatusStrip.tsx`](file:///d:/Varri/varri/varri/web/src/components/StatusStrip.tsx) - 15s health poller displaying dependency pills and demo clock banner.
+- **Badges:** [`web/src/components/Badge.tsx`](file:///d:/Varri/varri/varri/web/src/components/Badge.tsx) - Reusable component for contract-specified provenance badges.
+- **End-to-End Tests:** [`web/e2e/tier0_loop.spec.ts`](file:///d:/Varri/varri/varri/web/e2e/tier0_loop.spec.ts) - Playwright Chromium test suite.
+- **Adding a new page:**
+  1. Create `web/src/pages/YourPage.tsx`.
+  2. Add route in `web/src/App.tsx` (`<Route path="/your-route" element={<YourPage />} />`).
+- **Adding a new API call:**
+  1. Add output types in `web/src/types.ts`.
+  2. Add wrapper function in `web/src/api.ts` using `apiRequest<T>(...)`.
+  3. Add any specific error translations in `web/src/errors.ts`.
+
+### Things Phase 3 must know
+1. **Intake Route is Free:** The `/intake` route and `/api/intake/*` endpoints are completely free for Phase 3 to implement.
+2. **Desk Intake Form Reuse:** The intake form component at [`web/src/components/NewRequestForm.tsx`](file:///d:/Varri/varri/varri/web/src/components/NewRequestForm.tsx) can be directly imported and displayed alongside the uploaded register photo when the reader returns 503 (`READER_UNAVAILABLE`).
+3. **Driver Flags Display:** The Driver view renders auditing flags inside `#evidence-summary-ticks` (`.flags-list .badge-warning`) translated into plain words without blocking completion.
+4. **Officer Review Oversight:** The Officer dashboard displays the `Needs Review` counter card (`#metric-needs-review`) and provides status filters for filtering requests and slots requiring human oversight.
 
 
 ## Phase 3: intelligence, evidence and hardening

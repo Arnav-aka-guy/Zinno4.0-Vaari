@@ -4,6 +4,18 @@ All notable changes are recorded here. The format follows Keep a Changelog, and 
 
 ## [Unreleased]
 
+### Added (Phase 2 Frontend & Tier 0 Loop - 25 Oct 2026)
+- Modern, accessible React 18 + TypeScript + Vite frontend under `web/` with plain CSS design system.
+- Operator Desk (`/desk`) with summary counters, 15s intake form, request reflow panel, machines tab, and copyable WhatsApp message.
+- Tractor-cab Driver View (`/driver/{token}`) with 56px touch targets, camera input, client-side downscaling to 1600px JPEG, GPS capture, 3-tick evidence summary, and "Could not serve" flow.
+- Public Proof of Service Record (`/record/{token}`) with vertical 5-step timeline, status badges, print/PDF layout, and interactive SHA-256 hash verification.
+- Officer Oversight Dashboard (`/officer`) with 8 metric cards, multi-dimensional filters, reason proportion bars, village table, and 15s auto-refresh ticker.
+- Universal dependency health status strip (`StatusStrip.tsx`) and contract badges component (`Badge.tsx`).
+- Production SPA fallback serving compiled `web/dist` alongside `/api` routes on `0.0.0.0:8000`.
+- Cloudflare Quick Tunnel command (`python tasks.py tunnel`) for HTTPS mobile access to camera and GPS.
+- Playwright Chromium end-to-end test runner (`python tasks.py e2e`) proving full Tier 0 loop against a fresh temporary database in offline mode.
+- Demo setup and venue fallback guide in `docs/DEMO_SETUP.md`.
+
 ### Added (Phase 1 Backend Core - 25 Oct 2026)
 - Complete backend API and core engine matching `docs/CONTRACT.md`.
 - Cross-platform task runner `tasks.py` supporting `setup`, `dev`, `test`, `seed`, `reset`, `smoke`, `serve`.

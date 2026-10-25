@@ -54,23 +54,24 @@ from fastapi import Request
 
 # Serve frontend build if available (Phase 2)
 web_dist = Path(__file__).parent.parent / "web" / "dist"
-if web_dist.exists():
+
+class NonApiRoute(Route):
+    def matches(self, scope):
+        if scope["type"] == "http" and (scope["path"] == "/api" or scope["path"].startswith("/api/")):
+            return Match.NONE, {}
+        return super().matches(scope)
+
+async def spa_fallback(request: Request):
+    full_path = request.path_params.get("full_path", "")
+    file_path = web_dist / full_path
+    if full_path and file_path.exists() and file_path.is_file():
+        return FileResponse(file_path)
+    index_file = web_dist / "index.html"
+    if index_file.exists():
+        return FileResponse(index_file)
+    raise StarletteHTTPException(status_code=404, detail="Frontend not built. Run 'python tasks.py build-web'.")
+
+app.router.routes.append(NonApiRoute("/{full_path:path}", endpoint=spa_fallback, methods=["GET", "HEAD"]))
+if (web_dist / "assets").exists():
     app.mount("/assets", StaticFiles(directory=web_dist / "assets"), name="assets")
 
-    class NonApiRoute(Route):
-        def matches(self, scope):
-            if scope["type"] == "http" and (scope["path"] == "/api" or scope["path"].startswith("/api/")):
-                return Match.NONE, {}
-            return super().matches(scope)
-
-    async def spa_fallback(request: Request):
-        full_path = request.path_params.get("full_path", "")
-        file_path = web_dist / full_path
-        if full_path and file_path.exists() and file_path.is_file():
-            return FileResponse(file_path)
-        index_file = web_dist / "index.html"
-        if index_file.exists():
-            return FileResponse(index_file)
-        raise StarletteHTTPException(status_code=404, detail="Not Found")
-
-    app.router.routes.append(NonApiRoute("/{full_path:path}", endpoint=spa_fallback, methods=["GET", "HEAD"]))

@@ -35,15 +35,31 @@ def test_protected_route_with_passcode_returns_200(client, auth_headers):
 
 
 def test_spa_fallback_serves_index_for_non_api_paths(client):
-    # Desk route
-    response = client.get("/desk")
-    assert response.status_code == 200
-    assert "text/html" in response.headers.get("content-type", "")
-    assert "<!doctype html>" in response.text.lower()
+    from pathlib import Path
+    web_dist = Path(__file__).parent.parent.parent / "web" / "dist"
+    index_file = web_dist / "index.html"
+    created_dummy = False
+    if not index_file.exists():
+        web_dist.mkdir(parents=True, exist_ok=True)
+        index_file.write_text("<!doctype html><html><body>Vaari</body></html>", encoding="utf-8")
+        created_dummy = True
 
-    # Arbitrary non-api client route
-    response2 = client.get("/driver/some-token-path")
-    assert response2.status_code == 200
-    assert "text/html" in response2.headers.get("content-type", "")
-    assert "<!doctype html>" in response2.text.lower()
+    try:
+        # Desk route
+        response = client.get("/desk")
+        assert response.status_code == 200
+        assert "text/html" in response.headers.get("content-type", "")
+        assert "<!doctype html>" in response.text.lower()
+
+        # Arbitrary non-api client route
+        response2 = client.get("/driver/some-token-path")
+        assert response2.status_code == 200
+        assert "text/html" in response2.headers.get("content-type", "")
+        assert "<!doctype html>" in response2.text.lower()
+    finally:
+        if created_dummy:
+            try:
+                index_file.unlink()
+            except Exception:
+                pass
 
