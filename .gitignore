@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+
+# Node
+node_modules/
+web/dist/
+
+# Data that must never be committed
+.env
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+data/photos/
+data/cache/
+data/register_pages/
+
+# OS and editors
+.DS_Store
+.idea/
+.vscode/
+
+# Playwright
+web/test-results/
+web/playwright-report/
+
+# Phase bundles
+vaari-phase-1/
+vaari-phase-2/
+vaari-phase-3/
+
