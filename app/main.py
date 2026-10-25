@@ -5,16 +5,25 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from app.db import Base, get_engine
+from app.db import Base, get_engine, get_session_factory
 from app.errors import setup_error_handlers
 import app.models  # ensure models are registered
+from app.routes.common import get_or_create_home_centre
 from app.routes.health import router as health_router
+from app.routes.machines import router as machines_router
+from app.routes.plots import router as plots_router
+from app.routes.requests import router as requests_router
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Create tables at startup
     Base.metadata.create_all(bind=get_engine())
+    # Ensure home centre exists
+    session_factory = get_session_factory()
+    with session_factory() as session:
+        get_or_create_home_centre(session)
+        session.commit()
     yield
 
 
@@ -25,6 +34,9 @@ setup_error_handlers(app)
 
 # Mount API routers
 app.include_router(health_router, prefix="/api")
+app.include_router(requests_router, prefix="/api")
+app.include_router(machines_router, prefix="/api")
+app.include_router(plots_router, prefix="/api")
 
 # Serve frontend build if available (Phase 2)
 web_dist = Path(__file__).parent.parent / "web" / "dist"
