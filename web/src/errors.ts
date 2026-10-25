@@ -9,12 +9,12 @@ export const ERROR_MESSAGES: Record<string, string> = {
   UNAUTHORIZED: 'Wrong passcode. Please re-enter it.',
   WRONG_SLOT: 'This action is not allowed for this slot.',
   INVALID_TRANSITION: 'This action is not allowed in the current state.',
-  DUPLICATE_START: 'This job has already been started.',
-  EVIDENCE_MISSING: 'A photo is required to complete this action.',
+  DUPLICATE_START: 'This job has already been started from another device.',
+  EVIDENCE_MISSING: 'Take a photo first.',
   DRAFT_NOT_FOUND: 'The intake draft was not found.',
   READER_UNAVAILABLE: 'The document reader is temporarily unavailable.',
   PAYLOAD_TOO_LARGE: 'The file is too large. Maximum size is 8 MB.',
-  NETWORK_DOWN: 'Cannot reach the server. Check your connection.',
+  NETWORK_DOWN: 'No signal. Your photo is still here. Try again.',
 };
 
 /**

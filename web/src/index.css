@@ -1124,3 +1124,438 @@ body {
   color: var(--text-muted);
   font-size: 0.9375rem;
 }
+
+/* ─────────────────────────────────────────────────────────────
+   DRIVER CAB VIEW (Mobile, Sunlight, Gloves, High Contrast)
+   ───────────────────────────────────────────────────────────── */
+.driver-cab-container {
+  max-width: 600px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.driver-header {
+  background: #0f172a;
+  color: #ffffff;
+  padding: 1rem 1.25rem;
+  border-radius: var(--radius-lg);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: var(--shadow-md);
+}
+
+.driver-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.driver-machine-name {
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.driver-date-pill {
+  font-size: 0.8125rem;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.driver-sun-badge {
+  background: #334155;
+  color: #f8fafc;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  text-transform: uppercase;
+}
+
+.driver-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 0.25rem;
+}
+
+.driver-list-header h2 {
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
+.cab-hint {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+.driver-jobs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.driver-job-card {
+  background: #ffffff;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.25rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.driver-job-card:active {
+  transform: scale(0.99);
+}
+
+.driver-job-card:hover {
+  border-color: #94a3b8;
+}
+
+.card-status-in_progress {
+  border-color: #0284c7;
+  background: #f0f9ff;
+}
+
+.card-status-done {
+  border-color: #86efac;
+  background: #fcfdfc;
+  opacity: 0.85;
+}
+
+.job-card-top {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.job-seq-badge {
+  background: #0f172a;
+  color: #ffffff;
+  font-size: 1.125rem;
+  font-weight: 800;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.job-main-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.job-village {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.job-acres {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.job-card-footer {
+  margin-top: 0.75rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8125rem;
+}
+
+.job-ready-indicator {
+  font-weight: 700;
+  color: var(--primary);
+}
+
+/* Driver Action Modal / Card */
+.driver-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(3px);
+  z-index: 100;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+@media (min-width: 640px) {
+  .driver-modal-overlay {
+    align-items: center;
+    padding: 1rem;
+  }
+}
+
+.driver-action-card {
+  background: #ffffff;
+  width: 100%;
+  max-width: 560px;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  max-height: 92vh;
+  overflow-y: auto;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  box-shadow: var(--shadow-xl);
+}
+
+@media (min-width: 640px) {
+  .driver-action-card {
+    border-radius: var(--radius-lg);
+  }
+}
+
+.action-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  border-bottom: 2px solid var(--border-subtle);
+  padding-bottom: 0.75rem;
+}
+
+.action-card-header h3 {
+  font-size: 1.35rem;
+  font-weight: 800;
+  margin-top: 0.15rem;
+}
+
+.cab-close-btn {
+  background: #f1f5f9;
+  border: none;
+  font-size: 1.25rem;
+  font-weight: bold;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.slot-action-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* Camera Section */
+.camera-upload-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.camera-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem 1rem;
+  border: 2.5px dashed #94a3b8;
+  border-radius: var(--radius-lg);
+  background: #f8fafc;
+  cursor: pointer;
+  text-align: center;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #1e293b;
+  transition: all 0.15s ease;
+}
+
+.camera-label:active {
+  background: #f1f5f9;
+  border-color: var(--primary);
+}
+
+.camera-hint {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #64748b;
+  margin-top: 0.25rem;
+}
+
+.hidden-file-input {
+  display: none;
+}
+
+.photo-preview-box {
+  position: relative;
+  border-radius: var(--radius);
+  overflow: hidden;
+  max-height: 200px;
+  background: #000;
+}
+
+.preview-img {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+}
+
+.preview-badge {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background: #15803d;
+  color: #ffffff;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+}
+
+/* Huge Cab Buttons */
+.btn-cab-start {
+  background: #15803d;
+  color: #ffffff;
+  font-size: 1.35rem;
+  font-weight: 800;
+  padding: 1.1rem;
+  border-radius: var(--radius-lg);
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(21, 128, 61, 0.35);
+  letter-spacing: 0.02em;
+  text-align: center;
+  width: 100%;
+}
+
+.btn-cab-start:active:not(:disabled) {
+  background: #166534;
+  transform: translateY(1px);
+}
+
+.btn-cab-done {
+  background: #0284c7;
+  color: #ffffff;
+  font-size: 1.35rem;
+  font-weight: 800;
+  padding: 1.1rem;
+  border-radius: var(--radius-lg);
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.35);
+  letter-spacing: 0.02em;
+  text-align: center;
+  width: 100%;
+}
+
+.btn-cab-done:active:not(:disabled) {
+  background: #0369a1;
+  transform: translateY(1px);
+}
+
+/* Code Input Box */
+.code-input-group {
+  text-align: center;
+}
+
+.cab-code-input {
+  font-size: 1.5rem !important;
+  font-weight: 800;
+  letter-spacing: 0.3em;
+  text-align: center;
+  padding: 0.75rem !important;
+  border: 2px solid #cbd5e1 !important;
+  border-radius: var(--radius-lg) !important;
+}
+
+/* Evidence Summary (Three Ticks) */
+.evidence-summary-card {
+  background: #f0fdf4;
+  border: 2px solid #86efac;
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+}
+
+.evidence-summary-card h4 {
+  font-size: 1.125rem;
+  font-weight: 800;
+  color: #166534;
+  margin-bottom: 0.75rem;
+}
+
+.ticks-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.tick-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.tick-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #475569;
+}
+
+.tick-value {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+/* Could Not Serve Sub-Modal */
+.not-served-modal {
+  margin-top: 1rem;
+  background: #fef2f2;
+  border: 2px solid #fecaca;
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+}
+
+.not-served-modal h4 {
+  font-size: 1.125rem;
+  font-weight: 800;
+  color: #991b1b;
+  margin-bottom: 0.75rem;
+}
+
+.reasons-radio-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.radio-label {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+}
+
+.radio-label input[type="radio"] {
+  width: 1.15rem;
+  height: 1.15rem;
+  accent-color: #dc2626;
+}
+
+.driver-error-card {
+  background: #ffffff;
+  border: 2px solid #ef4444;
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  text-align: center;
+  margin: 2rem auto;
+  max-width: 480px;
+}
+
