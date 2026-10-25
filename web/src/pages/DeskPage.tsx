@@ -1,108 +1,363 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import StatusStrip from '../components/StatusStrip';
-import { getRequests, ApiError } from '../api';
+import NewRequestForm from '../components/NewRequestForm';
+import RequestDetailPanel from '../components/RequestDetailPanel';
+import WillMissTab from '../components/WillMissTab';
+import MachinesTab from '../components/MachinesTab';
+import {
+  getDashboardSummary,
+  getRequests,
+  getMachines,
+  getSchedule,
+  runSchedule,
+  getHealth,
+  ApiError,
+} from '../api';
 import { triggerReauth } from '../components/PasscodeGate';
-import type { RequestOut } from '../types';
+import { friendlyError } from '../errors';
+import type {
+  DashboardSummary,
+  RequestOut,
+  MachineOut,
+  ScheduleDay,
+} from '../types';
 
 export default function DeskPage() {
+  const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [requests, setRequests] = useState<RequestOut[]>([]);
+  const [machines, setMachines] = useState<MachineOut[]>([]);
+  const [todaySchedule, setTodaySchedule] = useState<ScheduleDay[]>([]);
+  const [todayDate, setTodayDate] = useState<string>('');
+
+  // UI state
+  const [activeTab, setActiveTab] = useState<'requests' | 'will_miss' | 'machines'>('requests');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [villageFilter, setVillageFilter] = useState('all');
+  const [selectedRequest, setSelectedRequest] = useState<RequestOut | null>(null);
+
   const [loading, setLoading] = useState(true);
+  const [runningScheduler, setRunningScheduler] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let active = true;
-    getRequests()
-      .then((data) => {
-        if (active) {
-          setRequests(data);
-          setLoading(false);
-        }
-      })
-      .catch((err) => {
-        if (active) {
-          if (err instanceof ApiError && err.status === 401) {
-            triggerReauth(err);
-          } else {
-            setError(err.message || 'Failed to load requests');
-          }
-          setLoading(false);
-        }
+  // Load all initial desk data
+  const loadDeskData = useCallback(async () => {
+    setError(null);
+    try {
+      const health = await getHealth();
+      const currentToday = health.today;
+      setTodayDate(currentToday);
+
+      const [summaryData, requestsData, machinesData, scheduleData] = await Promise.all([
+        getDashboardSummary(),
+        getRequests(),
+        getMachines(),
+        getSchedule({ date: currentToday }),
+      ]);
+
+      setSummary(summaryData);
+      setRequests(requestsData);
+      setMachines(machinesData);
+      setTodaySchedule(scheduleData);
+
+      // If a request is currently selected in side panel, refresh its data
+      setSelectedRequest(prev => {
+        if (!prev) return null;
+        return requestsData.find(r => r.id === prev.id) || null;
       });
-    return () => {
-      active = false;
-    };
+    } catch (err) {
+      if (err instanceof ApiError) {
+        if (err.status === 401) {
+          triggerReauth(err);
+          return;
+        }
+        setError(friendlyError(err.error_code) || err.message);
+      } else {
+        setError('Failed to load operator desk data.');
+      }
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  return (
-    <div className="page-container" id="desk-page">
-      <StatusStrip />
-      <header className="page-header">
-        <div>
-          <h1 className="page-title">Operator Desk</h1>
-          <p className="page-subtitle">Field service dispatch, request intake, and live machine schedules</p>
-        </div>
-      </header>
+  useEffect(() => {
+    loadDeskData();
+  }, [loadDeskData]);
 
-      <main className="desk-grid">
-        <section className="card">
-          <div className="card-header">
-            <h2>Recent Requests ({loading ? '…' : requests.length})</h2>
-            <span className="badge badge-info">Desk View</span>
+  // Run scheduler action
+  const handleRunScheduler = async () => {
+    setRunningScheduler(true);
+    try {
+      await runSchedule();
+      await loadDeskData();
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(friendlyError(err.error_code) || err.message);
+      } else {
+        setError('Failed to run scheduler.');
+      }
+    } finally {
+      setRunningScheduler(false);
+    }
+  };
+
+  // Distinct villages for filtering & suggestions
+  const villagesList = useMemo(() => {
+    const set = new Set<string>();
+    requests.forEach(r => {
+      if (r.village) set.add(r.village);
+    });
+    return Array.from(set).sort();
+  }, [requests]);
+
+  // Filtered requests list
+  const filteredRequests = useMemo(() => {
+    return requests.filter(r => {
+      if (statusFilter !== 'all' && r.status !== statusFilter) return false;
+      if (villageFilter !== 'all' && r.village !== villageFilter) return false;
+      return true;
+    });
+  }, [requests, statusFilter, villageFilter]);
+
+  // Handle clicking a request from will-miss tab
+  const handleSelectRequestId = (id: number) => {
+    const found = requests.find(r => r.id === id);
+    if (found) {
+      setSelectedRequest(found);
+    }
+  };
+
+  return (
+    <div className="desk-container" id="desk-page">
+      <StatusStrip />
+
+      {/* Top Header & Metrics Bar */}
+      <div className="desk-header">
+        <div className="desk-title-group">
+          <h1>Operator Desk</h1>
+          <p className="page-subtitle">Real-time request intake, machine dispatch, and schedule reflow</p>
+        </div>
+
+        <div className="desk-header-actions">
+          <button
+            id="btn-run-scheduler"
+            type="button"
+            className="btn btn-primary"
+            onClick={handleRunScheduler}
+            disabled={runningScheduler}
+          >
+            {runningScheduler ? 'Running Scheduler…' : '⚡ Run Scheduler'}
+          </button>
+        </div>
+      </div>
+
+      {/* Summary Counts Bar */}
+      <div className="summary-metrics-bar" id="summary-metrics-bar">
+        <div className="metric-card">
+          <span className="metric-num">{summary?.total ?? (loading ? '…' : 0)}</span>
+          <span className="metric-tag">Total Requests</span>
+        </div>
+        <div className="metric-card metric-scheduled">
+          <span className="metric-num">{summary?.scheduled ?? (loading ? '…' : 0)}</span>
+          <span className="metric-tag">Scheduled</span>
+        </div>
+        <div className="metric-card metric-will-miss">
+          <span className="metric-num">{summary?.will_miss ?? (loading ? '…' : 0)}</span>
+          <span className="metric-tag">Will Miss</span>
+        </div>
+        <div className="metric-card metric-needs-info">
+          <span className="metric-num">{summary?.needs_info ?? (loading ? '…' : 0)}</span>
+          <span className="metric-tag">Need info: no harvest date yet</span>
+        </div>
+      </div>
+
+      {error && (
+        <div className="outcome-banner outcome-error mb-3" id="desk-error-banner">
+          {error}
+          <button type="button" className="btn btn-secondary btn-sm ml-2" onClick={loadDeskData}>
+            Retry
+          </button>
+        </div>
+      )}
+
+      {/* 15-Second New Request Form */}
+      <NewRequestForm
+        villages={villagesList}
+        onSuccess={() => {
+          loadDeskData();
+        }}
+      />
+
+      {/* Tabs Row */}
+      <div className="desk-tabs-bar" role="tablist">
+        <button
+          id="tab-requests"
+          type="button"
+          role="tab"
+          aria-selected={activeTab === 'requests'}
+          className={`tab-btn ${activeTab === 'requests' ? 'active' : ''}`}
+          onClick={() => setActiveTab('requests')}
+        >
+          All Requests ({requests.length})
+        </button>
+        <button
+          id="tab-will-miss"
+          type="button"
+          role="tab"
+          aria-selected={activeTab === 'will_miss'}
+          className={`tab-btn ${activeTab === 'will_miss' ? 'active' : ''}`}
+          onClick={() => setActiveTab('will_miss')}
+        >
+          Will Miss ({summary?.will_miss ?? 0})
+        </button>
+        <button
+          id="tab-machines"
+          type="button"
+          role="tab"
+          aria-selected={activeTab === 'machines'}
+          className={`tab-btn ${activeTab === 'machines' ? 'active' : ''}`}
+          onClick={() => setActiveTab('machines')}
+        >
+          Machines ({machines.length})
+        </button>
+      </div>
+
+      {/* Tab 1: Requests Table */}
+      {activeTab === 'requests' && (
+        <div className="card table-card" id="requests-tab-content">
+          {/* Filters Bar */}
+          <div className="filters-bar">
+            <div className="filter-group">
+              <label htmlFor="filter-status">Status:</label>
+              <select
+                id="filter-status"
+                value={statusFilter}
+                onChange={e => setStatusFilter(e.target.value)}
+              >
+                <option value="all">All statuses</option>
+                <option value="scheduled">Scheduled</option>
+                <option value="will_miss">Will Miss</option>
+                <option value="needs_info">Need Info</option>
+                <option value="open">Open</option>
+                <option value="done">Done</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
+
+            <div className="filter-group">
+              <label htmlFor="filter-village">Village:</label>
+              <select
+                id="filter-village"
+                value={villageFilter}
+                onChange={e => setVillageFilter(e.target.value)}
+              >
+                <option value="all">All villages ({villagesList.length})</option>
+                {villagesList.map(v => (
+                  <option key={v} value={v}>
+                    {v}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="filter-count">
+              Showing {filteredRequests.length} of {requests.length}
+            </div>
           </div>
+
+          {/* Table */}
           {loading ? (
-            <p className="placeholder-text">Loading requests from backend…</p>
-          ) : error ? (
-            <p className="placeholder-error">{error}</p>
+            <div className="loading-state">Loading requests…</div>
+          ) : filteredRequests.length === 0 ? (
+            <div className="empty-state">
+              <p>No requests found matching the selected filters.</p>
+            </div>
           ) : (
             <div className="table-responsive">
-              <table className="data-table">
+              <table className="data-table" id="desk-requests-table">
                 <thead>
                   <tr>
-                    <th>ID</th>
+                    <th>Farmer</th>
                     <th>Village</th>
                     <th>Acres</th>
                     <th>Service</th>
-                    <th>Status</th>
                     <th>Deadline</th>
+                    <th>Status</th>
+                    <th>Slot Date & Machine</th>
+                    <th>Badges</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {requests.slice(0, 5).map((r) => (
-                    <tr key={r.id}>
-                      <td><strong>VR-{r.id}</strong></td>
+                  {filteredRequests.map(r => (
+                    <tr
+                      key={r.id}
+                      className={`clickable-row ${selectedRequest?.id === r.id ? 'row-selected' : ''}`}
+                      onClick={() => setSelectedRequest(r)}
+                      id={`req-row-${r.id}`}
+                    >
+                      <td>
+                        <div className="farmer-cell">
+                          <strong className="farmer-name">{r.farmer.name || r.farmer.phone}</strong>
+                          {r.farmer.name && <span className="farmer-phone-sub">{r.farmer.phone}</span>}
+                        </div>
+                      </td>
                       <td>{r.village}</td>
                       <td>{r.acres}</td>
-                      <td>{r.service_type}</td>
+                      <td className="text-capitalize">{r.service_type.replace('_', ' ')}</td>
+                      <td>{r.deadline_date || '—'}</td>
                       <td>
                         <span className={`status-pill pill-${r.status}`}>{r.status}</span>
                       </td>
-                      <td>{r.deadline_date || '—'}</td>
+                      <td>
+                        {r.slot ? (
+                          <div className="slot-cell">
+                            <span className="slot-date">{r.slot.service_date}</span>
+                            <span className="slot-mach text-muted">• {r.slot.machine_name}</span>
+                          </div>
+                        ) : (
+                          <span className="text-muted">—</span>
+                        )}
+                      </td>
+                      <td>
+                        {r.badges?.map(b => (
+                          <span key={b} className="badge badge-warning">
+                            {b}
+                          </span>
+                        ))}
+                      </td>
                     </tr>
                   ))}
-                  {requests.length === 0 && (
-                    <tr>
-                      <td colSpan={6} className="text-center">No requests found.</td>
-                    </tr>
-                  )}
                 </tbody>
               </table>
-              {requests.length > 5 && (
-                <p className="table-note">+ {requests.length - 5} more requests queued.</p>
-              )}
             </div>
           )}
-        </section>
+        </div>
+      )}
 
-        <section className="card">
-          <div className="card-header">
-            <h2>Daily Schedule & Dispatch</h2>
-            <span className="badge badge-neutral">Scheduled</span>
-          </div>
-          <p className="placeholder-text">
-            Machine dispatch schedules, slot timelines, and will-miss alerts will be rendered here.
-          </p>
-        </section>
-      </main>
+      {/* Tab 2: Will Miss Tab */}
+      {activeTab === 'will_miss' && (
+        <div className="card" id="will-miss-tab-content">
+          <WillMissTab onSelectRequest={handleSelectRequestId} />
+        </div>
+      )}
+
+      {/* Tab 3: Machines Tab */}
+      {activeTab === 'machines' && (
+        <div className="card" id="machines-tab-content">
+          <MachinesTab
+            machines={machines}
+            schedule={todaySchedule}
+            todayDate={todayDate}
+            onRefreshAll={loadDeskData}
+          />
+        </div>
+      )}
+
+      {/* Side Panel for Selected Request */}
+      <RequestDetailPanel
+        request={selectedRequest}
+        onClose={() => setSelectedRequest(null)}
+        onUpdate={loadDeskData}
+      />
     </div>
   );
 }

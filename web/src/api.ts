@@ -155,6 +155,23 @@ export function getMachines(): Promise<MachineOut[]> {
   });
 }
 
+export function patchMachine(
+  id: number,
+  body: {
+    status?: string;
+    name?: string;
+    type?: string;
+    service_types?: string[];
+    capacity_acres_per_day?: number;
+  },
+): Promise<MachineOut> {
+  return request<MachineOut>(`/api/machines/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...authHeaders('passcode') },
+    body: JSON.stringify(body),
+  });
+}
+
 // ── Schedule (passcode) ──────────────────────────────────────
 export function runSchedule(): Promise<ScheduleRunResult> {
   return request<ScheduleRunResult>('/api/schedule/run', {
