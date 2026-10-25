@@ -1,6 +1,7 @@
 """Scheduler service: loads DB rows into dataclasses, runs pure plan(), saves results."""
 
 import time
+from datetime import timezone
 from typing import Any
 from sqlalchemy.orm import Session
 from app import clock
@@ -111,10 +112,13 @@ def run_for_centre(session: Session, centre_id: int) -> dict[str, Any]:
         p = session.query(Plot).filter_by(id=r.plot_id).first()
         lat = (p.centroid_lat if p and p.centroid_lat else (p.pin_lat if p else None))
         lon = (p.centroid_lon if p and p.centroid_lon else (p.pin_lon if p else None))
+        c_at = r.created_at
+        if c_at is not None and c_at.tzinfo is None:
+            c_at = c_at.replace(tzinfo=timezone.utc)
         requests_to_plan.append(
             RequestIn(
                 id=r.id,
-                created_at=r.created_at,
+                created_at=c_at,
                 service_type=r.service_type,
                 acres_x100=r.acres_x100,
                 harvest_date=r.harvest_date,

@@ -1,0 +1,11 @@
+[
+  {"name": "Pind Kalan", "offset_km_north": 2.0, "offset_km_east": 1.0},
+  {"name": "Bhucho Khurd", "offset_km_north": -3.0, "offset_km_east": 2.0},
+  {"name": "Rampura Phul", "offset_km_north": 4.0, "offset_km_east": -3.0},
+  {"name": "Kot Shamir", "offset_km_north": -5.0, "offset_km_east": -4.0},
+  {"name": "Maur Mandi", "offset_km_north": 6.0, "offset_km_east": 5.0},
+  {"name": "Sangat Kalan", "offset_km_north": -7.0, "offset_km_east": 6.0},
+  {"name": "Talwandi Sabo", "offset_km_north": 8.0, "offset_km_east": -7.0},
+  {"name": "Goniana Mandi", "offset_km_north": -9.0, "offset_km_east": -7.0},
+  {"name": "Tibbi Far", "offset_km_north": 35.0, "offset_km_east": 20.0}
+]

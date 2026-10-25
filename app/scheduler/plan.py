@@ -145,15 +145,18 @@ def plan(
     home_lat = home_centre.lat if home_centre else 0.0
     home_lon = home_centre.lon if home_centre else 0.0
 
-    # 1. Sort requests: deadline_date, created_at, id
-    sorted_requests = sorted(
-        requests,
-        key=lambda r: (
+    def _sort_key(r: RequestIn):
+        c_at = r.created_at
+        if c_at is not None and c_at.tzinfo is None:
+            c_at = c_at.replace(tzinfo=timezone.utc)
+        return (
             r.deadline_date if r.deadline_date is not None else date.max,
-            r.created_at,
+            c_at,
             r.id,
-        ),
-    )
+        )
+
+    # 1. Sort requests: deadline_date, created_at, id
+    sorted_requests = sorted(requests, key=_sort_key)
 
     # Track capacity per (machine_id, date) in integer hundredths
     used_capacity: dict[tuple[int, date], int] = {}
