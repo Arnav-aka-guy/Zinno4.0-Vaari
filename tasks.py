@@ -273,10 +273,114 @@ def task_smoke() -> int:
     return run_cmd([str(py), "-m", "pytest", "-q", "tests/api/test_smoke.py"])
 
 
+def task_e2e(args: list[str]) -> int:
+    """Run Playwright end-to-end tests against a freshly reset temporary database in serve mode."""
+    import socket
+    import tempfile
+    import time
+    import urllib.request
+
+    print("Building web application for serve mode...")
+    task_build_web()
+
+    # Generate synthetic JPEG fixtures if not present
+    fixtures_dir = ROOT / "tests" / "fixtures"
+    start_fix = fixtures_dir / "start_field.jpg"
+    done_fix = fixtures_dir / "done_field.jpg"
+    if not start_fix.exists() or not done_fix.exists():
+        from tests.fixtures.synthetic_photos import TINY_JPEG
+        start_jpg = TINY_JPEG[:20] + b"\xff\xfe\x00\x07START" + TINY_JPEG[20:]
+        done_jpg = TINY_JPEG[:20] + b"\xff\xfe\x00\x06DONE" + TINY_JPEG[20:]
+        start_fix.write_bytes(start_jpg)
+        done_fix.write_bytes(done_jpg)
+
+    # Determine free port
+    port = 8000
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        try:
+            s.bind(("127.0.0.1", port))
+        except OSError:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s2:
+                s2.bind(("127.0.0.1", 0))
+                port = s2.getsockname()[1]
+
+    temp_dir = tempfile.TemporaryDirectory()
+    temp_path = Path(temp_dir.name)
+    db_path = temp_path / "vaari_e2e.sqlite"
+    data_dir = temp_path / "data"
+    data_dir.mkdir(parents=True, exist_ok=True)
+
+    env = os.environ.copy()
+    env["VAARI_DB_PATH"] = str(db_path)
+    env["VAARI_DATA_DIR"] = str(data_dir)
+    env["VAARI_DEMO_PASSCODE"] = "change-me"
+    env["VAARI_PUBLIC_BASE_URL"] = f"http://127.0.0.1:{port}"
+
+    py = get_venv_python()
+    print(f"Initializing temporary database at {db_path}...")
+    reset_ret = run_cmd([str(py), "-m", "app.seed.seed", "--reset"], env=env)
+    if reset_ret != 0:
+        print("Failed to initialize temporary database.")
+        temp_dir.cleanup()
+        return reset_ret
+
+    print(f"Starting test server on http://127.0.0.1:{port}...")
+    server_proc = subprocess.Popen(
+        [str(py), "-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", str(port)],
+        cwd=ROOT,
+        env=env,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+
+    # Wait for /api/health
+    health_url = f"http://127.0.0.1:{port}/api/health"
+    ready = False
+    t0 = time.time()
+    while time.time() - t0 < 20:
+        try:
+            with urllib.request.urlopen(health_url, timeout=1) as resp:
+                if resp.status == 200:
+                    ready = True
+                    break
+        except Exception:
+            time.sleep(0.2)
+
+    if not ready:
+        print("Test server failed to start within 20s.")
+        if os.name == "nt":
+            subprocess.run(["taskkill", "/F", "/T", "/PID", str(server_proc.pid)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        else:
+            server_proc.terminate()
+        temp_dir.cleanup()
+        return 1
+
+    print("Server ready! Running Playwright tests...")
+    playwright_env = env.copy()
+    playwright_env["BASE_URL"] = f"http://127.0.0.1:{port}"
+    npx_cmd = "npx.cmd" if os.name == "nt" else "npx"
+    web_dir = ROOT / "web"
+    cmd = [npx_cmd, "playwright", "test"] + args
+    exit_code = run_cmd(cmd, env=playwright_env, cwd=web_dir)
+
+    print("Stopping test server...")
+    if os.name == "nt":
+        subprocess.run(["taskkill", "/F", "/T", "/PID", str(server_proc.pid)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    else:
+        server_proc.terminate()
+        try:
+            server_proc.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            server_proc.kill()
+
+    temp_dir.cleanup()
+    return exit_code
+
+
 def main():
     if len(sys.argv) < 2:
         print("Usage: python tasks.py <task> [args]")
-        print("Available tasks: setup, dev, test, seed, reset, smoke, serve, tunnel, build-web")
+        print("Available tasks: setup, dev, test, seed, reset, smoke, serve, tunnel, build-web, e2e")
         sys.exit(1)
 
     task = sys.argv[1]
@@ -300,7 +404,9 @@ def main():
         sys.exit(task_build_web())
     elif task == "tunnel":
         sys.exit(task_tunnel())
-    elif task in ("e2e", "reader-eval", "purge-images"):
+    elif task == "e2e":
+        sys.exit(task_e2e(extra_args))
+    elif task in ("reader-eval", "purge-images"):
         print("not built yet")
         sys.exit(0)
     else:

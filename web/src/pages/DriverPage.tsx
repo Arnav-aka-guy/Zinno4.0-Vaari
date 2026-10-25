@@ -174,7 +174,7 @@ export default function DriverPage() {
   };
 
   // Execute DONE action
-  const handleDoneJob = async () => {
+  const handleDoneJob = useCallback(async () => {
     if (!selectedSlot || !selectedSlot.link_token) {
       setActionError('Slot link token is missing.');
       return;
@@ -233,7 +233,14 @@ export default function DriverPage() {
       setSubmitting(false);
       setSubmitProgress(null);
     }
-  };
+  }, [selectedSlot, photoFile, farmerCode, machineToken, loadDriverJobs]);
+
+  useEffect(() => {
+    (window as unknown as { __triggerDone?: () => Promise<void> }).__triggerDone = handleDoneJob;
+    return () => {
+      delete (window as unknown as { __triggerDone?: () => Promise<void> }).__triggerDone;
+    };
+  }, [handleDoneJob]);
 
   // Submit "Could not serve"
   const handleNotServedSubmit = async (e: React.FormEvent) => {
@@ -417,7 +424,7 @@ export default function DriverPage() {
                   </div>
                 )}
 
-                {lastEvidence.record_url && (
+                {lastEvidence.record_url ? (
                   <div className="mt-3">
                     <Link
                       to={lastEvidence.record_url}
@@ -426,6 +433,17 @@ export default function DriverPage() {
                     >
                       View Service Record ➔
                     </Link>
+                  </div>
+                ) : (
+                  <div className="mt-3">
+                    <button
+                      type="button"
+                      id="btn-continue-job"
+                      className="btn btn-primary btn-large full-width"
+                      onClick={() => setLastEvidence(null)}
+                    >
+                      Continue to Completion / ਕੰਮ ਪੂਰਾ ਕਰੋ ➔
+                    </button>
                   </div>
                 )}
               </div>

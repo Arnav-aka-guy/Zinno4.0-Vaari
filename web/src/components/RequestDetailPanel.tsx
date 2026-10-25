@@ -295,14 +295,16 @@ export default function RequestDetailPanel({ request, onClose, onUpdate }: Props
                     >
                       {isCopied ? '✓ Copied' : 'Copy Text'}
                     </button>
-                    <button
+                    <a
                       id="btn-whatsapp-msg"
-                      type="button"
+                      href={messageData.wa_link}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="btn btn-primary"
                       onClick={handleOpenWhatsApp}
                     >
                       Open WhatsApp
-                    </button>
+                    </a>
                     <a
                       id="btn-call-farmer"
                       href={messageData.tel_link}
