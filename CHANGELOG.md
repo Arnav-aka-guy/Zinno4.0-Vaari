@@ -4,6 +4,19 @@ All notable changes are recorded here. The format follows Keep a Changelog, and 
 
 ## [Unreleased]
 
+### Added (Phase 1 Backend Core - 25 Oct 2026)
+- Complete backend API and core engine matching `docs/CONTRACT.md`.
+- Cross-platform task runner `tasks.py` supporting `setup`, `dev`, `test`, `seed`, `reset`, `smoke`, `serve`.
+- Centralized timezone-aware clock `app/clock.py` (Asia/Kolkata) with `VAARI_TODAY` simulation support.
+- Full SQLite data model with 13 tables in WAL mode (`busy_timeout=5000`) and integer hundredths acres.
+- Pure deterministic deadline-first scheduler in `app/scheduler/plan.py` with boundary tests (B1-B6), rules (C1-C13), and byte-for-byte reproducibility.
+- Enforced slot lifecycle (`start`, `done`, `not-served`) and tamper-evident service records with v1 canonical JSON hash and verification endpoint.
+- Photo upload pipeline with size limits, magic bytes validation (JPEG, PNG, WebP), and SHA-256 integrity storage.
+- Bilingual slot notification rendering (Punjabi and English) with native month names and `wa.me` link generation.
+- Dynamic relative-date seed generator and sub-second database reset (`python tasks.py reset` -> 28 scheduled, 7 will miss, 5 needs info).
+- OpenAPI specification exported to `docs/openapi.json`.
+- Comprehensive test suite of 71 unit and API tests with 100% pass rate.
+
 ### Added (1 Oct 2026)
 - `docs/CONTRACT.md`: the single source of truth for the build: stack, layout, task runner, settings, full schema, enums, exact scheduler rules, lifecycle, record hash, messages, every route and output shape, seed spec, frontend rules, phase ownership.
 - `docs/PHASES.md`: three sequential phases for three builders, with handoff rules.
