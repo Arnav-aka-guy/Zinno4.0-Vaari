@@ -1559,3 +1559,304 @@ body {
   max-width: 480px;
 }
 
+/* ─────────────────────────────────────────────────────────────
+   RECORD PAGE (Farmer's Receipt & Verification)
+   ───────────────────────────────────────────────────────────── */
+.receipt-container {
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.receipt-sheet {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  box-shadow: var(--shadow-md);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.receipt-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding-bottom: 1.25rem;
+  border-bottom: 2px solid var(--border-subtle);
+}
+
+.receipt-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.receipt-icon {
+  font-size: 2.25rem;
+}
+
+.receipt-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.02em;
+}
+
+.receipt-punjabi-title {
+  display: block;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--primary);
+  margin-top: 0.15rem;
+}
+
+.receipt-badges-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.evidence-note-banner {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1d4ed8;
+  padding: 0.65rem 1rem;
+  border-radius: var(--radius);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* Vertical Timeline */
+.vertical-timeline {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  padding-left: 2rem;
+  margin: 0.5rem 0;
+}
+
+.vertical-timeline::before {
+  content: '';
+  position: absolute;
+  top: 15px;
+  bottom: 20px;
+  left: 17px;
+  width: 2px;
+  background: #cbd5e1;
+}
+
+.timeline-node {
+  position: relative;
+  margin-bottom: 1.75rem;
+}
+
+.timeline-node:last-child {
+  margin-bottom: 0;
+}
+
+.timeline-marker {
+  position: absolute;
+  left: -2rem;
+  top: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 2px solid #64748b;
+  color: #334155;
+  font-weight: 800;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+
+.timeline-marker.step-5 {
+  border-color: #15803d;
+  background: #15803d;
+  color: #ffffff;
+}
+
+.timeline-content {
+  background: #f8fafc;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+}
+
+.timeline-step-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--primary);
+  letter-spacing: 0.05em;
+  margin-bottom: 0.6rem;
+}
+
+.timeline-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 0.75rem;
+}
+
+.timeline-id {
+  font-size: 1.125rem;
+  color: var(--primary);
+}
+
+.outcome-content {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.outcome-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.outcome-pill {
+  padding: 0.35rem 0.85rem;
+  font-size: 0.875rem;
+  font-weight: 800;
+  border-radius: var(--radius-sm);
+  letter-spacing: 0.05em;
+}
+
+.pill-completed {
+  background: #15803d;
+  color: #ffffff;
+}
+
+.outcome-timing {
+  font-size: 0.9375rem;
+  font-weight: 700;
+}
+
+.timing-on-time {
+  color: #15803d;
+}
+
+.timing-late {
+  color: #b91c1c;
+}
+
+/* Flags Card */
+.receipt-flags-card {
+  background: #fffbeb;
+  border: 1.5px solid #fde68a;
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+}
+
+.flags-header h3 {
+  font-size: 0.9375rem;
+  font-weight: 800;
+  color: #92400e;
+  margin-bottom: 0.5rem;
+}
+
+.flags-list-items {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.flags-disclaimer {
+  font-size: 0.8125rem;
+  font-style: italic;
+  font-weight: 600;
+  color: #78350f;
+}
+
+/* Hash & Verification Card */
+.record-hash-card {
+  background: #f8fafc;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+}
+
+.hash-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.hash-header h3 {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #475569;
+}
+
+.hash-box-code {
+  background: #0f172a;
+  color: #38bdf8;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  word-break: break-all;
+  overflow-x: auto;
+}
+
+.hash-sub-disclaimer {
+  margin-top: 0.6rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.receipt-footer {
+  text-align: center;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.record-not-found-card {
+  background: #ffffff;
+  border: 2px solid #ef4444;
+  border-radius: var(--radius-lg);
+  padding: 2.5rem;
+  text-align: center;
+  box-shadow: var(--shadow-md);
+}
+
+.record-not-found-card h2 {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #b91c1c;
+  margin-bottom: 0.5rem;
+}
+
+/* Print CSS */
+@media print {
+  .no-print,
+  .app-navbar {
+    display: none !important;
+  }
+
+  body {
+    background: #ffffff !important;
+  }
+
+  .receipt-container {
+    max-width: 100% !important;
+    padding: 0 !important;
+  }
+
+  .receipt-sheet {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+}
+
+
