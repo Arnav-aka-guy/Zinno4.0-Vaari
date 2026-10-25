@@ -1859,4 +1859,170 @@ body {
   }
 }
 
+/* ─────────────────────────────────────────────────────────────
+   OFFICER DASHBOARD
+   ───────────────────────────────────────────────────────────── */
+.officer-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.officer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.officer-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.35rem;
+}
+
+.officer-ticker {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.officer-filters-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem;
+}
+
+.filter-clear-row {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* 8 Metrics Cards Grid */
+.officer-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem;
+}
+
+.metric-subtag {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-top: 0.2rem;
+}
+
+.metric-progress .metric-num {
+  color: #0284c7;
+}
+
+.metric-completed .metric-num {
+  color: #15803d;
+}
+
+.metric-review .metric-num {
+  color: #ea580c;
+}
+
+.metric-capacity .metric-num {
+  color: #6366f1;
+}
+
+/* Middle Grid: Reason Bars + Village Table */
+.officer-middle-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+@media (min-width: 900px) {
+  .officer-middle-grid {
+    grid-template-columns: 1.6fr 1fr;
+  }
+}
+
+.reason-bars-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.reason-bar-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.75rem;
+  background: #f8fafc;
+  border-radius: var(--radius);
+  border: 1px solid var(--border-subtle);
+}
+
+.reason-bar-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.reason-count {
+  font-size: 0.875rem;
+  color: var(--text);
+}
+
+.reason-bar-track {
+  height: 10px;
+  background: #e2e8f0;
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.reason-bar-fill {
+  height: 100%;
+  background: #dc2626;
+  border-radius: 9999px;
+  transition: width 0.3s ease;
+}
+
+.reason-action-line {
+  font-size: 0.8125rem;
+  color: #334155;
+  margin-top: 0.15rem;
+}
+
+.reason-action-line strong {
+  color: #0f172a;
+}
+
+.max-h-300 {
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.next-action-cell {
+  font-size: 0.8125rem;
+  color: #0f172a;
+}
+
+/* Bottom Disclaimer Callout */
+.officer-footer {
+  background: #f8fafc;
+  border-left: 4px solid #64748b;
+  padding: 1rem 1.25rem;
+  border-radius: var(--radius-sm);
+  margin-top: 0.5rem;
+}
+
+.officer-disclaimer-text {
+  font-size: 0.875rem;
+  color: #475569;
+  line-height: 1.5;
+  font-style: italic;
+}
+
+
 
