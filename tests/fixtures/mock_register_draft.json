@@ -1,0 +1,133 @@
+{
+  "reader": "mock",
+  "prompt_version": "v1",
+  "latency_ms": 40,
+  "rows": [
+    {
+      "row": 1,
+      "fields": {
+        "phone": "9000000101",
+        "name": "Gurpreet Singh",
+        "village": "Pind Kalan",
+        "acres": 4.5,
+        "service_type": "super_seeder",
+        "harvest_date": "2026-10-22",
+        "note": null
+      },
+      "confidence": {
+        "phone": 0.96,
+        "name": 0.62,
+        "village": 0.94,
+        "acres": 0.91,
+        "service_type": 0.95,
+        "harvest_date": 0.88
+      },
+      "issues": []
+    },
+    {
+      "row": 2,
+      "fields": {
+        "phone": "9000000102",
+        "name": "Manpreet Kaur",
+        "village": "Bhucho Khurd",
+        "acres": 3.0,
+        "service_type": "ਸੁਪਰ ਸੀਡਰ",
+        "harvest_date": "23/10",
+        "note": "Call before arrival"
+      },
+      "confidence": {
+        "phone": 0.93,
+        "name": 0.85,
+        "village": 0.90,
+        "acres": 0.71,
+        "service_type": 0.89,
+        "harvest_date": 0.74
+      },
+      "issues": []
+    },
+    {
+      "row": 3,
+      "fields": {
+        "phone": "9000000",
+        "name": "Balwinder Singh",
+        "village": "Rampura Phul",
+        "acres": 5.0,
+        "service_type": "happy_seeder",
+        "harvest_date": "24-10-2026",
+        "note": null
+      },
+      "confidence": {
+        "phone": 0.52,
+        "name": 0.81,
+        "village": 0.92,
+        "acres": 0.88,
+        "service_type": 0.90,
+        "harvest_date": 0.86
+      },
+      "issues": []
+    },
+    {
+      "row": 4,
+      "fields": {
+        "phone": "9000000104",
+        "name": "Harjinder Singh",
+        "village": "Kot Shamir",
+        "acres": 2.5,
+        "service_type": "happy_seeder",
+        "harvest_date": null,
+        "note": "Not harvested yet"
+      },
+      "confidence": {
+        "phone": 0.95,
+        "name": 0.84,
+        "village": 0.91,
+        "acres": 0.90,
+        "service_type": 0.93,
+        "harvest_date": 0.45
+      },
+      "issues": []
+    },
+    {
+      "row": 5,
+      "fields": {
+        "phone": "9000000105",
+        "name": "Kuldeep Singh",
+        "village": "Maur Mandi",
+        "acres": 40.0,
+        "service_type": "ਬੇਲਰ",
+        "harvest_date": "2026-10-25",
+        "note": "Decimal smudge in register"
+      },
+      "confidence": {
+        "phone": 0.94,
+        "name": 0.88,
+        "village": 0.93,
+        "acres": 0.55,
+        "service_type": 0.87,
+        "harvest_date": 0.90
+      },
+      "issues": []
+    },
+    {
+      "row": 6,
+      "fields": {
+        "phone": "9000000106",
+        "name": null,
+        "village": "Sangat Kalan",
+        "acres": 3.5,
+        "service_type": "SS",
+        "harvest_date": "2026-10-26",
+        "note": null
+      },
+      "confidence": {
+        "phone": 0.97,
+        "name": 0.50,
+        "village": 0.95,
+        "acres": 0.92,
+        "service_type": 0.91,
+        "harvest_date": 0.89
+      },
+      "issues": []
+    }
+  ]
+}
