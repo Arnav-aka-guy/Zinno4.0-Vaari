@@ -31,3 +31,10 @@ def test_protected_route_with_passcode_returns_200(client, auth_headers):
     response = client.get("/api/test-protected", headers=auth_headers)
     assert response.status_code == 200
     assert response.json()["status"] == "ok"
+
+
+def test_spa_fallback_serves_index_for_non_api_paths(client):
+    response = client.get("/desk")
+    assert response.status_code == 200
+    assert "<!doctype html>" in response.text.lower()
+

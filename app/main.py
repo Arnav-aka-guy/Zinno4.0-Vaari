@@ -48,18 +48,29 @@ app.include_router(driver_router, prefix="/api")
 app.include_router(records_router, prefix="/api")
 app.include_router(dashboard_router, prefix="/api")
 
+from starlette.routing import Route, Match
+from starlette.exceptions import HTTPException as StarletteHTTPException
+from fastapi import Request
+
 # Serve frontend build if available (Phase 2)
 web_dist = Path(__file__).parent.parent / "web" / "dist"
 if web_dist.exists():
     app.mount("/assets", StaticFiles(directory=web_dist / "assets"), name="assets")
 
-    @app.get("/{full_path:path}")
-    async def spa_fallback(full_path: str):
-        if full_path.startswith("api/"):
-            pass
+    class NonApiRoute(Route):
+        def matches(self, scope):
+            if scope["type"] == "http" and (scope["path"] == "/api" or scope["path"].startswith("/api/")):
+                return Match.NONE, {}
+            return super().matches(scope)
+
+    async def spa_fallback(request: Request):
+        full_path = request.path_params.get("full_path", "")
         file_path = web_dist / full_path
-        if file_path.exists() and file_path.is_file():
+        if full_path and file_path.exists() and file_path.is_file():
             return FileResponse(file_path)
         index_file = web_dist / "index.html"
         if index_file.exists():
             return FileResponse(index_file)
+        raise StarletteHTTPException(status_code=404, detail="Not Found")
+
+    app.router.routes.append(NonApiRoute("/{full_path:path}", endpoint=spa_fallback, methods=["GET", "HEAD"]))

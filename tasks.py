@@ -31,7 +31,7 @@ def run_cmd(cmd: list[str], env: dict | None = None, cwd: Path = ROOT) -> int:
 
 
 def task_setup() -> int:
-    """Create .venv if missing, install requirements.txt."""
+    """Create .venv if missing, install requirements.txt, web dependencies and playwright."""
     venv_dir = ROOT / ".venv"
     if not venv_dir.exists():
         print("Creating .venv...")
@@ -51,13 +51,49 @@ def task_setup() -> int:
     if web_dir.exists() and (web_dir / "package.json").exists():
         print("Running npm install in web/...")
         npm_cmd = "npm.cmd" if os.name == "nt" else "npm"
-        run_cmd([npm_cmd, "install"], cwd=web_dir)
+        ret = run_cmd([npm_cmd, "install"], cwd=web_dir)
+        if ret != 0:
+            return ret
+        print("Installing Playwright chromium...")
+        npx_cmd = "npx.cmd" if os.name == "nt" else "npx"
+        run_cmd([npx_cmd, "playwright", "install", "chromium"], cwd=web_dir)
     return 0
 
 
+def task_build_web() -> int:
+    """Run npm run build in web/."""
+    web_dir = ROOT / "web"
+    if not web_dir.exists():
+        print("web/ directory does not exist")
+        return 1
+    npm_cmd = "npm.cmd" if os.name == "nt" else "npm"
+    return run_cmd([npm_cmd, "run", "build"], cwd=web_dir)
+
+
 def task_dev() -> int:
-    """Run uvicorn with reload on 127.0.0.1:8000."""
+    """Run uvicorn with reload on 127.0.0.1:8000 and start Vite dev server."""
     py = get_venv_python()
+    web_dir = ROOT / "web"
+    if web_dir.exists() and (web_dir / "package.json").exists():
+        npm_cmd = "npm.cmd" if os.name == "nt" else "npm"
+        procs = []
+        try:
+            p_api = subprocess.Popen(
+                [str(py), "-m", "uvicorn", "app.main:app", "--reload", "--host", "127.0.0.1", "--port", "8000"],
+                cwd=ROOT,
+            )
+            procs.append(p_api)
+            p_web = subprocess.Popen(
+                [npm_cmd, "run", "dev"],
+                cwd=web_dir,
+            )
+            procs.append(p_web)
+            for p in procs:
+                p.wait()
+        except KeyboardInterrupt:
+            for p in procs:
+                p.terminate()
+        return 0
     return run_cmd([str(py), "-m", "uvicorn", "app.main:app", "--reload", "--host", "127.0.0.1", "--port", "8000"])
 
 
@@ -127,7 +163,9 @@ def main():
         sys.exit(task_reset())
     elif task == "smoke":
         sys.exit(task_smoke())
-    elif task in ("build-web", "e2e", "tunnel", "reader-eval", "purge-images"):
+    elif task == "build-web":
+        sys.exit(task_build_web())
+    elif task in ("e2e", "tunnel", "reader-eval", "purge-images"):
         print("not built yet")
         sys.exit(0)
     else:

@@ -80,7 +80,12 @@ python3 tasks.py dev
 
 ## Phase 2: screens and the loop
 
-_Not started._
+### Blocking backend bugs fixed
+1. **SPA Fallback shadowing `/api/*` routes:**
+   - **Bug:** `app/main.py` mounted an unconstrained `/{full_path:path}` catch-all for SPA fallback with an empty `pass` statement for `/api/` prefix. Once `web/dist` was compiled, this caused all non-existent API routes to return `200 OK` with HTML instead of the contract error shape (`404 NOT_FOUND`), and shadowed dynamic API test routes.
+   - **Fix:** Introduced `NonApiRoute` in `app/main.py` which explicitly returns `Match.NONE` for `/api` and `/api/*` paths, ensuring only non-API paths are routed to `spa_fallback`.
+   - **Test proving it:** `tests/api/test_errors.py::test_spa_fallback_serves_index_for_non_api_paths` and `test_unknown_api_route_returns_not_found_error_shape`.
+
 
 ## Phase 3: intelligence, evidence and hardening
 
