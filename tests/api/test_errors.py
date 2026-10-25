@@ -13,6 +13,7 @@ def dummy_protected(_passcode: str = Depends(require_passcode)):
 def test_unknown_api_route_returns_not_found_error_shape(client):
     response = client.get("/api/non-existent-route")
     assert response.status_code == 404
+    assert "application/json" in response.headers.get("content-type", "")
     data = response.json()
     assert data["error_code"] == "NOT_FOUND"
     assert "message" in data
@@ -34,7 +35,15 @@ def test_protected_route_with_passcode_returns_200(client, auth_headers):
 
 
 def test_spa_fallback_serves_index_for_non_api_paths(client):
+    # Desk route
     response = client.get("/desk")
     assert response.status_code == 200
+    assert "text/html" in response.headers.get("content-type", "")
     assert "<!doctype html>" in response.text.lower()
+
+    # Arbitrary non-api client route
+    response2 = client.get("/driver/some-token-path")
+    assert response2.status_code == 200
+    assert "text/html" in response2.headers.get("content-type", "")
+    assert "<!doctype html>" in response2.text.lower()
 

@@ -1041,11 +1041,14 @@ body {
 .driver-url-input {
   flex: 1;
   font-family: var(--font-mono);
-  font-size: 0.75rem;
-  padding: 0.35rem 0.5rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 0.5rem 0.75rem;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: #ffffff;
+  color: #0f172a;
 }
 
 .machine-jobs-section h5 {

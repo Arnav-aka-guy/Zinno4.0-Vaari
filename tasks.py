@@ -104,10 +104,143 @@ def task_test(args: list[str]) -> int:
     return run_cmd(cmd)
 
 
+def get_lan_ip() -> str:
+    """Detect the local machine's primary LAN IP."""
+    import socket
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception:
+        try:
+            return socket.gethostbyname(socket.gethostname())
+        except Exception:
+            return "127.0.0.1"
+
+
+def get_driver_urls(base_url: str) -> list[tuple[str, str]]:
+    """Retrieve machine names and driver URLs from the database."""
+    try:
+        if str(ROOT) not in sys.path:
+            sys.path.insert(0, str(ROOT))
+        from app.db import get_db
+        from app.models import Machine
+        with next(get_db()) as session:
+            machines = session.query(Machine).filter(Machine.link_token.isnot(None)).order_by(Machine.id).all()
+            return [(m.name, f"{base_url}/driver/{m.link_token}") for m in machines]
+    except Exception:
+        return []
+
+
 def task_serve() -> int:
-    """Run uvicorn on 0.0.0.0:8000 serving the API and built frontend."""
+    """Build web assets and run uvicorn on 0.0.0.0:8000 serving API and frontend together."""
+    task_build_web()
+
+    lan_ip = get_lan_ip()
+    local_url = "http://localhost:8000"
+    lan_url = f"http://{lan_ip}:8000"
+
+    print("\n" + "=" * 70, flush=True)
+    print("  Vaari Operations Server (Serve Mode)", flush=True)
+    print("=" * 70, flush=True)
+    print(f"  Local URL:  {local_url}", flush=True)
+    print(f"  LAN URL:    {lan_url}", flush=True)
+    print("\n  Driver URLs (open on phone over LAN or HTTPS tunnel):", flush=True)
+
+    driver_urls = get_driver_urls(lan_url)
+    if driver_urls:
+        for name, url in driver_urls:
+            print(f"    - {name:<22}: {url}", flush=True)
+    else:
+        print("    (No machines found or database not initialized)", flush=True)
+    print("=" * 70 + "\n", flush=True)
+    sys.stdout.flush()
+
     py = get_venv_python()
     return run_cmd([str(py), "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"])
+
+
+def find_cloudflared() -> Path | None:
+    """Find cloudflared executable in PATH, virtualenv, or standard directories."""
+    import shutil
+    cmd = shutil.which("cloudflared")
+    if cmd:
+        return Path(cmd)
+
+    venv_cf = ROOT / ".venv" / ("Scripts" if os.name == "nt" else "bin") / ("cloudflared.exe" if os.name == "nt" else "cloudflared")
+    if venv_cf.exists():
+        return venv_cf
+
+    if os.name == "nt":
+        for pf in [os.environ.get("ProgramFiles", "C:\\Program Files"), os.environ.get("ProgramFiles(x86)", "C:\\Program Files (x86)")]:
+            candidate = Path(pf) / "cloudflared" / "cloudflared.exe"
+            if candidate.exists():
+                return candidate
+    return None
+
+
+def task_tunnel() -> int:
+    """Run cloudflared tunnel to expose port 8000 over HTTPS, or print installation steps."""
+    cf = find_cloudflared()
+    if not cf:
+        print("\n" + "=" * 70)
+        print("  cloudflared is not installed")
+        print("=" * 70)
+        print("A Quick Tunnel provides a free, instant HTTPS URL with no account needed,")
+        print("allowing phone browsers to access the driver interface and camera/GPS.\n")
+        print("To install cloudflared:")
+        print("  Windows:")
+        print("    winget install --id Cloudflare.cloudflared")
+        print("    (or download binary from: https://github.com/cloudflare/cloudflared/releases)")
+        print("\n  macOS:")
+        print("    brew install cloudflared")
+        print("\n  Linux:")
+        print("    curl -L --output cloudflared https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64")
+        print("    chmod +x cloudflared && sudo mv cloudflared /usr/local/bin/\n")
+        print("Once installed, run:")
+        print("  python tasks.py tunnel\n")
+        print("Then copy the https://*.trycloudflare.com URL and set it in your .env:")
+        print("  VAARI_PUBLIC_BASE_URL=https://<your-tunnel-url>.trycloudflare.com")
+        print("and restart the server (`python tasks.py serve`), so record links in")
+        print("API responses and QR codes are full public URLs.")
+        print("=" * 70 + "\n")
+        return 1
+
+    print(f"Starting Cloudflare Quick Tunnel using: {cf}")
+    import re
+    url_pattern = re.compile(r"https://[a-zA-Z0-9-]+\.trycloudflare\.com")
+    proc = subprocess.Popen(
+        [str(cf), "tunnel", "--url", "http://localhost:8000"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        bufsize=1,
+    )
+    url_found = False
+    try:
+        assert proc.stdout is not None
+        for line in proc.stdout:
+            sys.stdout.write(line)
+            sys.stdout.flush()
+            if not url_found:
+                match = url_pattern.search(line)
+                if match:
+                    url = match.group(0)
+                    url_found = True
+                    print("\n" + "=" * 70)
+                    print("  Cloudflare Quick Tunnel Connected!")
+                    print(f"  Public HTTPS URL: {url}")
+                    print("=" * 70)
+                    print("  To use this URL for record links and QR codes:")
+                    print(f"  1. Set in your .env: VAARI_PUBLIC_BASE_URL={url}")
+                    print("  2. Restart the server (`python tasks.py serve`).")
+                    print("=" * 70 + "\n")
+        return proc.wait()
+    except KeyboardInterrupt:
+        proc.terminate()
+        return 0
 
 
 def task_seed() -> int:
@@ -143,7 +276,7 @@ def task_smoke() -> int:
 def main():
     if len(sys.argv) < 2:
         print("Usage: python tasks.py <task> [args]")
-        print("Available tasks: setup, dev, test, seed, reset, smoke, serve")
+        print("Available tasks: setup, dev, test, seed, reset, smoke, serve, tunnel, build-web")
         sys.exit(1)
 
     task = sys.argv[1]
@@ -165,7 +298,9 @@ def main():
         sys.exit(task_smoke())
     elif task == "build-web":
         sys.exit(task_build_web())
-    elif task in ("e2e", "tunnel", "reader-eval", "purge-images"):
+    elif task == "tunnel":
+        sys.exit(task_tunnel())
+    elif task in ("e2e", "reader-eval", "purge-images"):
         print("not built yet")
         sys.exit(0)
     else:

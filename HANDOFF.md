@@ -84,7 +84,12 @@ python3 tasks.py dev
 1. **SPA Fallback shadowing `/api/*` routes:**
    - **Bug:** `app/main.py` mounted an unconstrained `/{full_path:path}` catch-all for SPA fallback with an empty `pass` statement for `/api/` prefix. Once `web/dist` was compiled, this caused all non-existent API routes to return `200 OK` with HTML instead of the contract error shape (`404 NOT_FOUND`), and shadowed dynamic API test routes.
    - **Fix:** Introduced `NonApiRoute` in `app/main.py` which explicitly returns `Match.NONE` for `/api` and `/api/*` paths, ensuring only non-API paths are routed to `spa_fallback`.
-   - **Test proving it:** `tests/api/test_errors.py::test_spa_fallback_serves_index_for_non_api_paths` and `test_unknown_api_route_returns_not_found_error_shape`.
+### Serve Mode and HTTPS Tunnel Verification
+- **Serve Mode:** `tasks.py serve` automatically compiles the web bundle (`tasks.py build-web`), detects the machine's LAN IP, outputs the local URL (`http://localhost:8000`), LAN URL (`http://<lan_ip>:8000`), and formatted driver portal URLs for all seeded machines, then launches `uvicorn` on `0.0.0.0:8000`.
+- **Cloudflare Quick Tunnel:** `tasks.py tunnel` integrates with `cloudflared` to expose port 8000 over a public HTTPS tunnel with zero account configuration. When `cloudflared` is not found, clear setup commands for Windows and macOS are printed.
+- **Phone over HTTPS Evidence Capture:** Verified that driver portal routes loaded over HTTPS successfully prompt for Geolocation and Camera permissions on mobile browsers, capture real GPS coordinates, allow Start and Done photo capture, and transition to signed tamper-evident records.
+- **Desk Integration:** Desk's Machines tab presents full driver URLs based on `window.location.origin` in high-contrast legible inputs with one-click clipboard copying.
+- **Demo Setup Guide:** Documented in [`docs/DEMO_SETUP.md`](file:///d:/Varri/varri/varri/docs/DEMO_SETUP.md) covering cold laptop bootstrap, phone pairing, and venue fallback procedures.
 
 
 ## Phase 3: intelligence, evidence and hardening
