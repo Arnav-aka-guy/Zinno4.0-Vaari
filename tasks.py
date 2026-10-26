@@ -408,7 +408,13 @@ def main():
         sys.exit(task_tunnel())
     elif task == "e2e":
         sys.exit(task_e2e(extra_args))
-    elif task in ("reader-eval", "purge-images"):
+    elif task == "reader-eval":
+        if str(ROOT) not in sys.path:
+            sys.path.insert(0, str(ROOT))
+        from app.intake.eval import evaluate_directory
+        evaluate_directory()
+        sys.exit(0)
+    elif task == "purge-images":
         print("not built yet")
         sys.exit(0)
     else:
