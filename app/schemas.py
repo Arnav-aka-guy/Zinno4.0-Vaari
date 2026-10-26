@@ -185,7 +185,7 @@ class PlotIn(BaseModel):
     village: str
     pin_lat: float | None = None
     pin_lon: float | None = None
-    acres: float
+    acres: float | None = None
     geojson: str | None = None
 
     @field_validator("farmer_phone")
@@ -195,8 +195,10 @@ class PlotIn(BaseModel):
 
     @field_validator("acres")
     @classmethod
-    def check_acres(cls, v: float) -> float:
-        return validate_acres_val(v)
+    def check_acres(cls, v: float | None) -> float | None:
+        if v is not None:
+            return validate_acres_val(v)
+        return v
 
 
 class PlotOut(BaseModel):
@@ -212,6 +214,7 @@ class PlotOut(BaseModel):
     centroid_lon: float | None = None
     location_source: str
     geojson: str | None = None
+    warning: str | None = None
 
 
 class NotServedIn(BaseModel):

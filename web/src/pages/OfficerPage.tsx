@@ -1,6 +1,13 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import StatusStrip from '../components/StatusStrip';
-import { getDashboardSummary, getWillMiss, getMachines, ApiError } from '../api';
+import {
+  getDashboardSummary,
+  getWillMiss,
+  getMachines,
+  downloadUsageCsv,
+  ApiError,
+} from '../api';
 import { triggerReauth } from '../components/PasscodeGate';
 import { friendlyError } from '../errors';
 import type { DashboardSummary, WillMissItem, MachineOut } from '../types';
@@ -14,25 +21,30 @@ const REASON_ACTIONS: Record<string, string> = {
   NO_CAPACITY: 'Check the alternate centre listed.',
 };
 
+const FLAG_LABELS: Record<string, string> = {
+  too_fast: 'Finished faster than a machine can work',
+  position_mismatch: 'Position outside expected plot',
+  exact_duplicate_photo: 'Exact duplicate photo',
+  code_missing: "Farmer's code not entered",
+  code_wrong: "Farmer's code wrong",
+};
+
 export default function OfficerPage() {
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [willMissList, setWillMissList] = useState<WillMissItem[]>([]);
   const [machines, setMachines] = useState<MachineOut[]>([]);
 
-  // Filter state
   const [filterDate, setFilterDate] = useState('');
   const [filterVillage, setFilterVillage] = useState('all');
   const [filterMachineId, setFilterMachineId] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
 
-  // Loading & Refresh state
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<number>(Date.now());
   const [secondsAgo, setSecondsAgo] = useState(0);
 
-  // Fetch officer data
   const fetchData = useCallback(async () => {
     setError(null);
     try {
@@ -70,12 +82,10 @@ export default function OfficerPage() {
     }
   }, [filterDate, filterVillage, filterMachineId, filterStatus]);
 
-  // Initial load and filter change trigger
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
-  // Auto-refresh every 15s
   useEffect(() => {
     const timer = setInterval(() => {
       fetchData();
@@ -83,7 +93,6 @@ export default function OfficerPage() {
     return () => clearInterval(timer);
   }, [fetchData]);
 
-  // "Updated X seconds ago" ticker
   useEffect(() => {
     const ticker = setInterval(() => {
       setSecondsAgo(Math.floor((Date.now() - lastUpdated) / 1000));
@@ -96,25 +105,40 @@ export default function OfficerPage() {
     fetchData();
   };
 
-  // Unique villages for filter
+  const handleDownloadCsv = async () => {
+    try {
+      const csvText = await downloadUsageCsv();
+      const blob = new Blob([csvText], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'vaari_usage.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(friendlyError(err.error_code) || err.message);
+      }
+    }
+  };
+
   const villagesList = useMemo(() => {
     if (!summary?.by_village) return [];
     return Object.keys(summary.by_village).sort();
   }, [summary?.by_village]);
 
-  // Max count for reason bar scaling
   const maxReasonCount = useMemo(() => {
     if (!summary?.by_reason) return 1;
     const counts = Object.values(summary.by_reason);
     return counts.length > 0 ? Math.max(...counts, 1) : 1;
   }, [summary?.by_reason]);
 
+  const flaggedJobs = summary?.flagged_jobs || [];
+
   return (
     <div className="officer-container" id="officer-page">
-      {/* Shared Status Strip */}
       <StatusStrip />
 
-      {/* Top Header */}
       <div className="officer-header">
         <div>
           <div className="officer-badge-row">
@@ -129,7 +153,15 @@ export default function OfficerPage() {
           </p>
         </div>
 
-        <div className="officer-header-actions">
+        <div className="officer-header-actions" style={{ display: 'flex', gap: '0.5rem' }}>
+          <button
+            id="btn-download-usage-csv"
+            type="button"
+            className="btn btn-secondary"
+            onClick={handleDownloadCsv}
+          >
+            📥 Download usage CSV
+          </button>
           <button
             id="btn-officer-refresh"
             type="button"
@@ -151,7 +183,7 @@ export default function OfficerPage() {
         </div>
       )}
 
-      {/* Filters Bar: date, village, machine, status */}
+      {/* Filters Bar */}
       <section className="card filter-card" id="officer-filters-bar">
         <div className="officer-filters-grid">
           <div className="form-group">
@@ -213,72 +245,47 @@ export default function OfficerPage() {
             </select>
           </div>
         </div>
-
-        {(filterDate || filterVillage !== 'all' || filterMachineId !== 'all' || filterStatus !== 'all') && (
-          <div className="filter-clear-row mt-2">
-            <button
-              type="button"
-              className="link-btn"
-              onClick={() => {
-                setFilterDate('');
-                setFilterVillage('all');
-                setFilterMachineId('all');
-                setFilterStatus('all');
-              }}
-            >
-              Clear filters
-            </button>
-          </div>
-        )}
       </section>
 
       {/* 8 Core Metrics Cards */}
       <section className="officer-metrics-grid" id="officer-summary-cards">
-        {/* Total */}
         <div className="card metric-card" id="metric-total">
           <span className="metric-num">{summary?.total ?? (loading ? '…' : 0)}</span>
           <span className="metric-tag">Total Requests</span>
         </div>
 
-        {/* Scheduled */}
         <div className="card metric-card metric-scheduled" id="metric-scheduled">
           <span className="metric-num">{summary?.scheduled ?? (loading ? '…' : 0)}</span>
           <span className="metric-tag">Scheduled</span>
         </div>
 
-        {/* In Progress */}
         <div className="card metric-card metric-progress" id="metric-in-progress">
           <span className="metric-num">{summary?.in_progress ?? (loading ? '…' : 0)}</span>
           <span className="metric-tag">In Progress</span>
         </div>
 
-        {/* Completed */}
         <div className="card metric-card metric-completed" id="metric-completed">
           <span className="metric-num">{summary?.completed ?? (loading ? '…' : 0)}</span>
           <span className="metric-tag">Completed</span>
         </div>
 
-        {/* Will Miss */}
         <div className="card metric-card metric-will-miss" id="metric-will-miss">
           <span className="metric-num">{summary?.will_miss ?? (loading ? '…' : 0)}</span>
           <span className="metric-tag">Will Miss</span>
         </div>
 
-        {/* Needs Review */}
         <div className="card metric-card metric-review" id="metric-needs-review">
           <span className="metric-num">{summary?.needs_review ?? (loading ? '…' : 0)}</span>
           <span className="metric-tag">Needs Review</span>
           <small className="metric-subtag">Jobs flagged for a person to look at</small>
         </div>
 
-        {/* Needs Info */}
         <div className="card metric-card metric-needs-info" id="metric-needs-info">
           <span className="metric-num">{summary?.needs_info ?? (loading ? '…' : 0)}</span>
           <span className="metric-tag">Needs Info</span>
           <small className="metric-subtag">Awaiting harvest date</small>
         </div>
 
-        {/* Capacity Used % */}
         <div className="card metric-card metric-capacity" id="metric-capacity">
           <span className="metric-num">{summary?.capacity_used_pct ?? (loading ? '…' : 0)}%</span>
           <span className="metric-tag">7-Day Capacity Used</span>
@@ -286,9 +293,68 @@ export default function OfficerPage() {
         </div>
       </section>
 
+      {/* Flagged Jobs for Review Section (Step 07: village, machine, flags, link to record — no names or phones) */}
+      <section className="card" id="officer-flagged-jobs-section">
+        <div className="card-header">
+          <div>
+            <h2>Jobs Flagged for Review ({flaggedJobs.length})</h2>
+            <p className="card-subtitle">
+              Flags ask a person to look. They never penalise anyone. No personal names or phone numbers are shown.
+            </p>
+          </div>
+        </div>
+
+        {flaggedJobs.length === 0 ? (
+          <p className="text-muted p-2">No jobs currently flagged for review.</p>
+        ) : (
+          <div className="table-responsive">
+            <table className="data-table" id="officer-flagged-jobs-table">
+              <thead>
+                <tr>
+                  <th>Request</th>
+                  <th>Village</th>
+                  <th>Machine</th>
+                  <th>Acres</th>
+                  <th>Flags</th>
+                  <th>Record</th>
+                </tr>
+              </thead>
+              <tbody>
+                {flaggedJobs.map((fj) => (
+                  <tr key={fj.slot_id} id={`flagged-job-row-${fj.slot_id}`}>
+                    <td><strong>{fj.request_id}</strong></td>
+                    <td>{fj.village}</td>
+                    <td>{fj.machine}</td>
+                    <td>{fj.acres} ac</td>
+                    <td>
+                      {fj.flags.map((fl) => (
+                        <span key={fl} className="badge badge-warning mr-1">
+                          {FLAG_LABELS[fl] || fl}
+                        </span>
+                      ))}
+                    </td>
+                    <td>
+                      {fj.record_token ? (
+                        <Link
+                          to={`/record/${fj.record_token}`}
+                          className="btn btn-secondary btn-sm"
+                        >
+                          View Record ➔
+                        </Link>
+                      ) : (
+                        <span className="text-muted">—</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
       {/* Middle Row: Will Miss by Reason & By Village */}
       <div className="officer-middle-grid">
-        {/* Will Miss by Reason (Plain CSS bars) */}
         <section className="card reason-breakdown-card" id="by-reason-card">
           <div className="card-header">
             <h2>Will Miss by Reason</h2>
@@ -327,7 +393,6 @@ export default function OfficerPage() {
           )}
         </section>
 
-        {/* By Village Table */}
         <section className="card village-breakdown-card" id="by-village-card">
           <div className="card-header">
             <h2>Requests by Village</h2>
@@ -428,7 +493,6 @@ export default function OfficerPage() {
         )}
       </section>
 
-      {/* Required Bottom Disclaimer */}
       <footer className="officer-footer" id="officer-disclaimer">
         <p className="officer-disclaimer-text">
           Will miss means the request cannot be served before its deadline with the machines available. It is never a statement about what a farmer will do.

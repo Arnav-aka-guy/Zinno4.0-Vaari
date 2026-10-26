@@ -98,7 +98,7 @@ def serialize_machine(machine: Machine) -> MachineOut:
     )
 
 
-def serialize_plot(plot: Plot) -> PlotOut:
+def serialize_plot(plot: Plot, warning: str | None = None) -> PlotOut:
     return PlotOut(
         id=plot.id,
         farmer_id=plot.farmer_id,
@@ -110,6 +110,7 @@ def serialize_plot(plot: Plot) -> PlotOut:
         centroid_lon=plot.centroid_lon,
         location_source=plot.location_source,
         geojson=plot.geojson,
+        warning=warning,
     )
 
 

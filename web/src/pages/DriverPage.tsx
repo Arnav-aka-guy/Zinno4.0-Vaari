@@ -414,13 +414,27 @@ export default function DriverPage() {
 
                 {/* Flags in Plain Words */}
                 {lastEvidence.flags && lastEvidence.flags.length > 0 && (
-                  <div className="flags-list mt-2">
+                  <div className="flags-list mt-2" id="driver-flags-list">
                     <span className="attr-label">Flags:</span>
-                    {lastEvidence.flags.map((fl) => (
-                      <span key={fl} className="badge badge-warning ml-1">
-                        {fl === 'too_fast' ? 'Notice: completed under 25 min/acre' : fl}
-                      </span>
-                    ))}
+                    {lastEvidence.flags.map((fl) => {
+                      const plainText =
+                        fl === 'too_fast'
+                          ? 'Finished faster than a machine can work: a person will look'
+                          : fl === 'exact_duplicate_photo'
+                          ? "Photo exactly matches another job's photo"
+                          : fl === 'code_missing'
+                          ? "Farmer's code not entered"
+                          : fl === 'code_wrong'
+                          ? "Farmer's code did not match"
+                          : fl === 'position_mismatch'
+                          ? 'Position is outside the expected plot: a person will look'
+                          : fl;
+                      return (
+                        <span key={fl} className="badge badge-warning ml-1">
+                          {plainText}
+                        </span>
+                      );
+                    })}
                   </div>
                 )}
 
