@@ -10,6 +10,9 @@ import type {
   DashboardSummary,
   DriverResponse,
   Health,
+  IntakeConfirmResult,
+  IntakeConfirmRowIn,
+  IntakeOut,
   MachineOut,
   PatchRequestBody,
   RecordOut,
@@ -83,18 +86,6 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
   }
   return body as T;
 }
-
-function jsonReq(
-  method: string,
-  url: string,
-  data?: unknown,
-  auth: 'passcode' | 'none' = 'passcode',
-): Promise<Response> {
-  // This is only used internally; the public API uses request()
-  void method; void url; void data; void auth;
-  throw new Error('Use request() directly');
-}
-void jsonReq; // suppress unused warning
 
 // ── Health (public) ──────────────────────────────────────────
 export function getHealth(): Promise<Health> {
@@ -315,5 +306,80 @@ export function getDashboardSummary(params?: {
   const qs = q.toString();
   return request<DashboardSummary>(`/api/dashboard/summary${qs ? '?' + qs : ''}`, {
     headers: { ...authHeaders('passcode') },
+  });
+}
+
+export async function downloadUsageCsv(): Promise<string> {
+  let res: Response;
+  try {
+    res = await fetch('/api/dashboard/usage.csv', {
+      headers: { ...authHeaders('passcode') },
+    });
+  } catch {
+    throw new ApiError(
+      { error_code: 'NETWORK_DOWN', message: 'Cannot reach the server.', details: {} },
+      0,
+    );
+  }
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({
+      error_code: 'UNKNOWN',
+      message: res.statusText,
+      details: {},
+    }));
+    throw new ApiError(body as ApiErrorShape, res.status);
+  }
+  return res.text();
+}
+
+// ── Intake (passcode, Phase 3) ───────────────────────────────
+export function uploadRegisterPhoto(photo: File): Promise<IntakeOut> {
+  const form = new FormData();
+  form.append('photo', photo);
+  return request<IntakeOut>('/api/intake/register-photo', {
+    method: 'POST',
+    headers: { ...authHeaders('passcode') },
+    body: form,
+  });
+}
+
+export function getIntakeDraft(intakeId: number): Promise<IntakeOut> {
+  return request<IntakeOut>(`/api/intake/${intakeId}`, {
+    headers: { ...authHeaders('passcode') },
+  });
+}
+
+export async function getIntakeImageBlobUrl(intakeId: number): Promise<string> {
+  let res: Response;
+  try {
+    res = await fetch(`/api/intake/${intakeId}/image`, {
+      headers: { ...authHeaders('passcode') },
+    });
+  } catch {
+    throw new ApiError(
+      { error_code: 'NETWORK_DOWN', message: 'Cannot reach the server.', details: {} },
+      0,
+    );
+  }
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({
+      error_code: 'UNKNOWN',
+      message: res.statusText,
+      details: {},
+    }));
+    throw new ApiError(body as ApiErrorShape, res.status);
+  }
+  const blob = await res.blob();
+  return URL.createObjectURL(blob);
+}
+
+export function confirmIntakeDraft(
+  intakeId: number,
+  rows: IntakeConfirmRowIn[],
+): Promise<IntakeConfirmResult> {
+  return request<IntakeConfirmResult>(`/api/intake/${intakeId}/confirm`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders('passcode') },
+    body: JSON.stringify({ rows }),
   });
 }

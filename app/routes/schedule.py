@@ -1,14 +1,16 @@
-"""API routes for scheduling (Contract Section 11)."""
+"""API routes for scheduling (Contract Section 11 & Step 10 rescue options)."""
 
 from datetime import date
 from typing import Any
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from app.auth import require_passcode
+from app.config import settings
 from app.db import get_db
 from app.enums import from_x100
-from app.models import Machine, Plot, Request, Slot
+from app.models import Centre, Machine, Plot, Request, Slot
 from app.routes.common import get_or_create_home_centre, serialize_slot
+from app.scheduler.distance import estimated_distance_km
 from app.scheduler.service import run_for_centre
 
 router = APIRouter(prefix="/schedule", tags=["schedule"])
@@ -40,7 +42,6 @@ def get_schedule(
 
     slots = query.order_by(Slot.service_date.asc(), Slot.machine_id.asc(), Slot.seq.asc()).all()
 
-    # Group by (machine_id, service_date)
     grouped: dict[tuple[int, date], list[Slot]] = {}
     for s in slots:
         grouped.setdefault((s.machine_id, s.service_date), []).append(s)
@@ -82,10 +83,33 @@ def get_will_miss_requests(
         .order_by(Request.deadline_date.asc().nullslast(), Request.id.asc())
         .all()
     )
+    non_home_centres = (
+        session.query(Centre)
+        .filter_by(is_home=False)
+        .order_by(Centre.id.asc())
+        .all()
+    )
 
     items = []
     for r in misses:
         plot = session.query(Plot).filter_by(id=r.plot_id).first()
+        req_lat = (plot.centroid_lat or plot.pin_lat) if plot else None
+        req_lon = (plot.centroid_lon or plot.pin_lon) if plot else None
+
+        # Compute up to two nearest non-home centres offering the requested service_type
+        eligible_centres = []
+        for c in non_home_centres:
+            if r.service_type in (c.service_types or []):
+                dist = estimated_distance_km(
+                    c.lat, c.lon, req_lat, req_lon, settings.road_factor
+                )
+                eligible_centres.append((dist, c.id, c.name))
+        eligible_centres.sort(key=lambda x: (x[0], x[1]))
+        rescue_options = [
+            {"name": name, "distance_km": dist}
+            for dist, _, name in eligible_centres[:2]
+        ]
+
         items.append({
             "request_id": r.id,
             "village": plot.village_name if plot else "",
@@ -99,5 +123,6 @@ def get_will_miss_requests(
             "next_action": r.next_action,
             "nearest_alternative": r.nearest_alternative,
             "alternative_distance_km": r.alternative_distance_km,
+            "rescue_options": rescue_options,
         })
     return items

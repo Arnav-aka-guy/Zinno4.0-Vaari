@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app import clock
 from app.config import settings
 from app.db import get_db
+from app.routes.intake import get_reader_status_for_health
 
 router = APIRouter(tags=["health"])
 
@@ -21,7 +22,7 @@ def get_health(session: Session = Depends(get_db)):
     return {
         "status": "ok",
         "database": db_status,
-        "reader": "not_built",
+        "reader": get_reader_status_for_health(),
         "satellite": "disabled",
         "messaging": "screen+wa_link",
         "today": clock.today().isoformat(),

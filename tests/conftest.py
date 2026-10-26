@@ -11,6 +11,7 @@ from sqlalchemy.orm import sessionmaker
 # Ensure test passcode and settings
 os.environ["VAARI_DEMO_PASSCODE"] = "test-passcode"
 os.environ["VAARI_TZ"] = "Asia/Kolkata"
+os.environ["VAARI_READER"] = "mock"
 
 from app.main import app
 from app.db import override_db, get_db, Base

@@ -76,7 +76,7 @@ export default function WillMissTab({ onSelectRequest }: Props) {
               <th>Deadline</th>
               <th>Reason Code</th>
               <th>Explanation & Next Action</th>
-              <th>Alternative Centre</th>
+              <th>Rescue Options (Nearby Centres)</th>
             </tr>
           </thead>
           <tbody>
@@ -109,7 +109,15 @@ export default function WillMissTab({ onSelectRequest }: Props) {
                   )}
                 </td>
                 <td>
-                  {item.nearest_alternative ? (
+                  {item.rescue_options && item.rescue_options.length > 0 ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      {item.rescue_options.map(opt => (
+                        <span key={opt.name} className="alternative-tag">
+                          {opt.name} <span className="text-muted">({opt.distance_km} km)</span>
+                        </span>
+                      ))}
+                    </div>
+                  ) : item.nearest_alternative ? (
                     <span className="alternative-tag">
                       {item.nearest_alternative}
                       {item.alternative_distance_km != null && (

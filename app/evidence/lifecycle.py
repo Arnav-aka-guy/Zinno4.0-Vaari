@@ -1,4 +1,4 @@
-"""Slot lifecycle transitions: start, done, not_served."""
+"""Slot lifecycle transitions: start, done, not_served (Contract Section 9 & Step 07)."""
 
 from fastapi import UploadFile
 from sqlalchemy.orm import Session
@@ -7,8 +7,9 @@ from app.errors import VaariError
 from app.event_log import log_event
 from app.evidence.checks import run_checks
 from app.evidence.photos import process_photo
+from app.evidence.position import check_position
 from app.evidence.record import create_record
-from app.models import Evidence, Farmer, Request, ServiceRecord, Slot
+from app.models import Evidence, Farmer, Plot, Request, ServiceRecord, Slot
 from app.routes.common import get_or_create_home_centre
 from app.scheduler.service import run_for_centre
 
@@ -39,8 +40,8 @@ async def start_slot(
 
     req = session.query(Request).filter_by(id=slot.request_id).one()
     farmer = session.query(Farmer).filter_by(id=req.farmer_id).one()
+    plot = session.query(Plot).filter_by(id=req.plot_id).first()
 
-    # Photo required if farmer gave evidence consent
     if farmer.consent_evidence and photo is None:
         raise VaariError(
             error_code="EVIDENCE_MISSING",
@@ -52,7 +53,8 @@ async def start_slot(
     photo_path, photo_sha256, photo_bytes = await process_photo(slot.id, "start", photo)
 
     server_time = clock.now_utc()
-    pos_state = "not_checked" if (lat is not None and lon is not None) else "not_given"
+    pos_res = check_position(lat, lon, accuracy_m, plot)
+    pos_state = pos_res["position_state"]
 
     ev = Evidence(
         slot_id=slot.id,
@@ -61,8 +63,8 @@ async def start_slot(
         lat=lat,
         lon=lon,
         accuracy_m=accuracy_m,
-        distance_to_plot_m=None,
-        plausible=None,
+        distance_to_plot_m=pos_res["distance_to_plot_m"],
+        plausible=pos_res["plausible"],
         photo_path=photo_path,
         photo_sha256=photo_sha256,
         photo_bytes=photo_bytes,
@@ -97,8 +99,8 @@ async def done_slot(
 
     req = session.query(Request).filter_by(id=slot.request_id).one()
     farmer = session.query(Farmer).filter_by(id=req.farmer_id).one()
+    plot = session.query(Plot).filter_by(id=req.plot_id).first()
 
-    # Photo required if evidence consent
     if farmer.consent_evidence and photo is None:
         raise VaariError(
             error_code="EVIDENCE_MISSING",
@@ -110,7 +112,8 @@ async def done_slot(
     photo_path, photo_sha256, photo_bytes = await process_photo(slot.id, "done", photo)
 
     server_time = clock.now_utc()
-    pos_state = "not_checked" if (lat is not None and lon is not None) else "not_given"
+    pos_res = check_position(lat, lon, accuracy_m, plot)
+    pos_state = pos_res["position_state"]
 
     ev = Evidence(
         slot_id=slot.id,
@@ -119,23 +122,18 @@ async def done_slot(
         lat=lat,
         lon=lon,
         accuracy_m=accuracy_m,
-        distance_to_plot_m=None,
-        plausible=None,
+        distance_to_plot_m=pos_res["distance_to_plot_m"],
+        plausible=pos_res["plausible"],
         photo_path=photo_path,
         photo_sha256=photo_sha256,
         photo_bytes=photo_bytes,
     )
     session.add(ev)
+    session.flush()
 
     slot.status = "done"
     slot.done_at = server_time
     slot.code_entered = service_code
-    if service_code is not None and service_code == slot.service_code:
-        slot.farmer_confirmed = True
-    elif service_code is not None:
-        slot.farmer_confirmed = False
-    else:
-        slot.farmer_confirmed = None
 
     flags = run_checks(session, slot)
     slot.flags_json = flags

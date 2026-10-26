@@ -163,4 +163,49 @@ Full details on phone pairing, camera/GPS permissions, and venue fallback proced
 
 ## Phase 3: intelligence, evidence and hardening
 
-_Not started._
+### Built by, date, tag
+- **Built by:** Antigravity (Phase 3 Intelligence, Evidence & Hardening)
+- **Date:** 2026-10-26
+- **Tags:** `phase-3-done`, `v0.1.0`
+
+### How to run (exact commands, from a fresh clone)
+```bash
+python tasks.py setup
+python tasks.py reset
+python tasks.py test
+python tasks.py smoke
+python tasks.py e2e
+python tasks.py reader-eval
+python tasks.py purge-images --dry-run
+python tasks.py serve
+```
+
+### What works (each item with the test that proves it)
+- **RegisterReader Protocol, MockReader & Deterministic Row Validation:** Validates phone (10 digits starting 6–9), acres (0.25–200, with non-blocking warning above 25 acres), Punjabi Gurmukhi and English service names (ਸੁਪਰ ਸੀਡਰ, ਹੈਪੀ ਸੀਡਰ, ਬੇਲਰ, ਮਲਚਰ), and flexible dates (18/10, 18-10-2026, 2026-10-18); caps failing cell confidence at 0.3 without dropping cells (`tests/unit/test_intake_reader_and_validation.py`).
+- **HostedVisionReader & Privacy Gate:** Refuses to run unless `VAARI_ALLOW_HOSTED_READER=true`; supports Gemini and Anthropic with 20s timeout and 1-retry JSON self-correction (`tests/unit/test_intake_hosted.py`).
+- **Reader Evaluation Runner (`python tasks.py reader-eval`):** Evaluates `examples/register_pages/*.expected.json` and writes count-based table to `examples/register_pages/EVAL.md` (`app/intake/eval.py`).
+- **Pure Geodesic Polygon Area & Evidence Rules (E1–E8):** WGS84 geodesic polygon acreage (`pyproj.Geod`) within 5% on 5 reference polygons near 30.7°N, 76.6°E; UTM Zone 43N (`EPSG:32643`) point-to-polygon and pin+acres circle checks; `too_fast`, `duplicate_photo` (with E7 documenting SHA-256 resizing limitation), and `code_flags` (`tests/unit/test_evidence_rules.py`).
+- **Intake API & Image Retention Job (`purge-images`):** `POST /api/intake/register-photo`, `GET /api/intake/{id}`, `GET /api/intake/{id}/image`, `POST /api/intake/{id}/confirm` tracking human edits (`edited`, `edited_fields_json`), plus `python tasks.py purge-images [--dry-run]` (`tests/api/test_step05_intake.py`).
+- **Register Confirmation Screen (`/intake`) & Fallback Form:** Persistent privacy warning banner, side-by-side register photo and editable table, <0.8 amber highlights, red issue cells, URL `?id=` reload persistence, and 503 fallback opening `NewRequestForm` beside the stored image (`web/src/pages/IntakePage.tsx`, verified in `web/e2e/full_loop.spec.ts` and `web/e2e/fallbacks.spec.ts`).
+- **Wired Evidence Checks, Polygons & Officer Review List (E1–E10):** `POST /api/plots` computes polygon acreage/centroid and warns on >10% discrepancy; start and done compute position plausibility at insert time; `run_checks` logs every check to `event_log`; flags appear in plain English on Driver, Record, and Officer screens (`tests/api/test_step07_evidence_and_plots.py`).
+- **All Fallback Paths Tested:** Reader timeout, malformed JSON twice, empty page, health reader: down, denied geolocation (`position self-reported`), offline slot message (`Not sent: copy or call`), and deleted DB recovery in under 1 minute (`tests/api/test_step08_fallbacks.py`, `web/e2e/fallbacks.spec.ts`, `docs/FALLBACK_RESULTS.md`).
+- **Full End-to-End Playwright Loop & Readiness Record:** All 8 steps of `docs/TESTING.md` §7 pass offline (`web/e2e/full_loop.spec.ts`, `docs/READINESS.md`).
+- **Tier 2 Usage CSV, Map Panel & Rescue Options:** `GET /api/dashboard/usage.csv` with Officer download button, offline-safe spatial map panel (`web/src/optional/DeskMapPanel.tsx`), and `rescue_options` on `/api/schedule/will-miss` (`tests/api/test_step10_tier2.py`).
+
+### What does not work yet, or was cut
+- **Cut (Tier 2 optional items per `docs/BUILD_PLAN.md` §2 kill order):** Satellite NDVI/dNBR sensing (`app/optional/orbit/`) and GPX coverage trace (`app/optional/trace/`) were omitted to keep the offline demo 100% deterministic.
+- **What the demo says instead:** "Satellite harvest intervals and GPS implement traces are optional cross-check layers on our v0.7 roadmap; the core loop runs 100% offline on phone evidence and never lets an orbit result decide anything on its own."
+
+### Contract changes (additive only, with the reason)
+- `GET /api/health`: reader now dynamically reports `"mock"`, `"hosted"`, or `"down"` (if the last reader call failed within 5 minutes or hosted mode is locked), as specified in `docs/CONTRACT.md` §11.
+- `POST /api/plots` (`PlotOut`): Added optional `warning: str | None = None` when stated acres differ from the GeoJSON polygon's geodesic area by more than 10% (Step 07).
+- `GET /api/dashboard/summary`: Added `flagged_jobs` list (anonymized: `slot_id`, `request_id`, `village`, `machine`, `acres`, `service_date`, `flags`, `record_token` — no farmer names or phones) so the Officer page can list flagged jobs for review (Step 07).
+- `GET /api/schedule/will-miss`: Added `rescue_options` listing up to two nearest compatible centres with estimated distances (Step 10).
+- `GET /api/dashboard/usage.csv`: Added Tier 2 CSV export route (`date,machine,jobs,acres`) from `docs/CONTRACT.md` §11.
+
+### Libraries added beyond the contract, and why
+None required for default execution. `HostedVisionReader` uses `httpx` (already in `requirements.txt`) for zero-install compatibility.
+
+### Reader evaluation counts & model confidence note
+- From `examples/register_pages/EVAL.md` (page1 against MockRegisterReader, prompt v1): 6 total rows, 4 rows usable without edits, 1 wrong phone, 1 wrong acres, 0 wrong dates/services/villages/names, 0.05s per page.
+- **Important note on confidence:** Vision model confidence scores (0.0 to 1.0) are the model's own self-reported estimates and are not statistically calibrated probabilities. Failing validation cells are deterministically capped at 0.3.

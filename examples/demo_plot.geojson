@@ -1,0 +1,24 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "request_id": 1,
+        "name": "Demo Hall Plot (Pind Kalan)"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [76.7788, 30.7328],
+            [76.7800, 30.7328],
+            [76.7800, 30.7338],
+            [76.7788, 30.7338],
+            [76.7788, 30.7328]
+          ]
+        ]
+      }
+    }
+  ]
+}

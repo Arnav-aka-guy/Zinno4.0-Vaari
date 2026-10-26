@@ -16,9 +16,15 @@ web/dist/
 *.sqlite
 *.sqlite-wal
 *.sqlite-shm
+data/
 data/photos/
 data/cache/
 data/register_pages/
+
+# Staging and dumps
+.staging/
+*.txt
+!requirements.txt
 
 # OS and editors
 .DS_Store
@@ -33,4 +39,3 @@ web/playwright-report/
 vaari-phase-1/
 vaari-phase-2/
 vaari-phase-3/
-

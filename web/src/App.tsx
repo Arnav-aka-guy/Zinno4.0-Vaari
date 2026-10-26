@@ -4,6 +4,7 @@ import DeskPage from './pages/DeskPage';
 import DriverPage from './pages/DriverPage';
 import OfficerPage from './pages/OfficerPage';
 import RecordPage from './pages/RecordPage';
+import IntakePage from './pages/IntakePage';
 
 export default function App() {
   return (
@@ -23,6 +24,13 @@ export default function App() {
                 id="nav-desk"
               >
                 Desk
+              </NavLink>
+              <NavLink
+                to="/intake"
+                className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+                id="nav-intake"
+              >
+                Register Intake
               </NavLink>
               <NavLink
                 to="/officer"
@@ -57,6 +65,14 @@ export default function App() {
               element={
                 <PasscodeGate>
                   <DeskPage />
+                </PasscodeGate>
+              }
+            />
+            <Route
+              path="/intake"
+              element={
+                <PasscodeGate>
+                  <IntakePage />
                 </PasscodeGate>
               }
             />

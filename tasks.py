@@ -6,7 +6,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-
 ROOT = Path(__file__).parent.resolve()
 
 
@@ -37,7 +36,7 @@ def task_setup() -> int:
         print("Creating .venv...")
         import venv
         venv.create(venv_dir, with_pip=True)
-    
+
     py = get_venv_python()
     print("Installing requirements.txt...")
     ret = run_cmd([str(py), "-m", "pip", "install", "--upgrade", "pip"])
@@ -46,7 +45,7 @@ def task_setup() -> int:
     ret = run_cmd([str(py), "-m", "pip", "install", "-r", "requirements.txt"])
     if ret != 0:
         return ret
-    
+
     web_dir = ROOT / "web"
     if web_dir.exists() and (web_dir / "package.json").exists():
         print("Running npm install in web/...")
@@ -81,7 +80,17 @@ def task_dev() -> int:
         procs = []
         try:
             p_api = subprocess.Popen(
-                [str(py), "-m", "uvicorn", "app.main:app", "--reload", "--host", "127.0.0.1", "--port", "8000"],
+                [
+                    str(py),
+                    "-m",
+                    "uvicorn",
+                    "app.main:app",
+                    "--reload",
+                    "--host",
+                    "127.0.0.1",
+                    "--port",
+                    "8000",
+                ],
                 cwd=ROOT,
             )
             procs.append(p_api)
@@ -96,7 +105,9 @@ def task_dev() -> int:
             for p in procs:
                 p.terminate()
         return 0
-    return run_cmd([str(py), "-m", "uvicorn", "app.main:app", "--reload", "--host", "127.0.0.1", "--port", "8000"])
+    return run_cmd(
+        [str(py), "-m", "uvicorn", "app.main:app", "--reload", "--host", "127.0.0.1", "--port", "8000"]
+    )
 
 
 def task_test(args: list[str]) -> int:
@@ -130,7 +141,12 @@ def get_driver_urls(base_url: str) -> list[tuple[str, str]]:
         from app.db import get_db
         from app.models import Machine
         with next(get_db()) as session:
-            machines = session.query(Machine).filter(Machine.link_token.isnot(None)).order_by(Machine.id).all()
+            machines = (
+                session.query(Machine)
+                .filter(Machine.link_token.isnot(None))
+                .order_by(Machine.id)
+                .all()
+            )
             return [(m.name, f"{base_url}/driver/{m.link_token}") for m in machines]
     except Exception:
         return []
@@ -171,12 +187,20 @@ def find_cloudflared() -> Path | None:
     if cmd:
         return Path(cmd)
 
-    venv_cf = ROOT / ".venv" / ("Scripts" if os.name == "nt" else "bin") / ("cloudflared.exe" if os.name == "nt" else "cloudflared")
+    venv_cf = (
+        ROOT
+        / ".venv"
+        / ("Scripts" if os.name == "nt" else "bin")
+        / ("cloudflared.exe" if os.name == "nt" else "cloudflared")
+    )
     if venv_cf.exists():
         return venv_cf
 
     if os.name == "nt":
-        for pf in [os.environ.get("ProgramFiles", "C:\\Program Files"), os.environ.get("ProgramFiles(x86)", "C:\\Program Files (x86)")]:
+        for pf in [
+            os.environ.get("ProgramFiles", "C:\\Program Files"),
+            os.environ.get("ProgramFiles(x86)", "C:\\Program Files (x86)"),
+        ]:
             candidate = Path(pf) / "cloudflared" / "cloudflared.exe"
             if candidate.exists():
                 return candidate
@@ -190,23 +214,10 @@ def task_tunnel() -> int:
         print("\n" + "=" * 70)
         print("  cloudflared is not installed")
         print("=" * 70)
-        print("A Quick Tunnel provides a free, instant HTTPS URL with no account needed,")
-        print("allowing phone browsers to access the driver interface and camera/GPS.\n")
         print("To install cloudflared:")
-        print("  Windows:")
-        print("    winget install --id Cloudflare.cloudflared")
-        print("    (or download binary from: https://github.com/cloudflare/cloudflared/releases)")
-        print("\n  macOS:")
-        print("    brew install cloudflared")
-        print("\n  Linux:")
-        print("    curl -L --output cloudflared https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64")
-        print("    chmod +x cloudflared && sudo mv cloudflared /usr/local/bin/\n")
-        print("Once installed, run:")
-        print("  python tasks.py tunnel\n")
-        print("Then copy the https://*.trycloudflare.com URL and set it in your .env:")
-        print("  VAARI_PUBLIC_BASE_URL=https://<your-tunnel-url>.trycloudflare.com")
-        print("and restart the server (`python tasks.py serve`), so record links in")
-        print("API responses and QR codes are full public URLs.")
+        print("  Windows: winget install --id Cloudflare.cloudflared")
+        print("  macOS:   brew install cloudflared")
+        print("  Linux:   curl -L --output cloudflared https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64")
         print("=" * 70 + "\n")
         return 1
 
@@ -234,10 +245,6 @@ def task_tunnel() -> int:
                     print("\n" + "=" * 70)
                     print("  Cloudflare Quick Tunnel Connected!")
                     print(f"  Public HTTPS URL: {url}")
-                    print("=" * 70)
-                    print("  To use this URL for record links and QR codes:")
-                    print(f"  1. Set in your .env: VAARI_PUBLIC_BASE_URL={url}")
-                    print("  2. Restart the server (`python tasks.py serve`).")
                     print("=" * 70 + "\n")
         return proc.wait()
     except KeyboardInterrupt:
@@ -248,31 +255,46 @@ def task_tunnel() -> int:
 def task_seed() -> int:
     """Load seed data into an existing database."""
     py = get_venv_python()
-    seed_file = ROOT / "app" / "seed" / "seed.py"
-    if not seed_file.exists():
-        print("not built yet")
-        return 0
     return run_cmd([str(py), "-m", "app.seed.seed"])
 
 
 def task_reset() -> int:
     """Delete database, photos, register pages, create tables, seed, run scheduler."""
     py = get_venv_python()
-    seed_file = ROOT / "app" / "seed" / "seed.py"
-    if not seed_file.exists():
-        print("not built yet")
-        return 0
     return run_cmd([str(py), "-m", "app.seed.seed", "--reset"])
 
 
 def task_smoke() -> int:
     """Run the smoke test."""
     py = get_venv_python()
-    smoke_file = ROOT / "tests" / "api" / "test_smoke.py"
-    if not smoke_file.exists():
-        print("not built yet")
-        return 0
     return run_cmd([str(py), "-m", "pytest", "-q", "tests/api/test_smoke.py"])
+
+
+def task_reader_eval() -> int:
+    """Run the configured reader on examples/register_pages/ and print counts."""
+    py = get_venv_python()
+    return run_cmd([str(py), "-m", "app.intake.eval"])
+
+
+def task_purge_images(args: list[str]) -> int:
+    """Delete register page images past image_delete_after."""
+    dry_run = "--dry-run" in args
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    from app.db import Base, get_engine, get_session_factory
+    from app.routes.intake import purge_expired_register_images
+
+    Base.metadata.create_all(bind=get_engine())
+    sf = get_session_factory()
+    with sf() as session:
+        deleted = purge_expired_register_images(session, dry_run=dry_run)
+    prefix = "[DRY RUN] Would delete" if dry_run else "Deleted"
+    if deleted:
+        for p in deleted:
+            print(f"{prefix}: {p}")
+    else:
+        print(f"{prefix}: 0 expired register images.")
+    return 0
 
 
 def task_e2e(args: list[str]) -> int:
@@ -285,18 +307,19 @@ def task_e2e(args: list[str]) -> int:
     print("Building web application for serve mode...")
     task_build_web()
 
-    # Generate synthetic JPEG fixtures if not present
     fixtures_dir = ROOT / "tests" / "fixtures"
     start_fix = fixtures_dir / "start_field.jpg"
     done_fix = fixtures_dir / "done_field.jpg"
-    if not start_fix.exists() or not done_fix.exists():
+    reg_fix = fixtures_dir / "register_page.jpg"
+    if not start_fix.exists() or not done_fix.exists() or not reg_fix.exists():
         from tests.fixtures.synthetic_photos import TINY_JPEG
         start_jpg = TINY_JPEG[:20] + b"\xff\xfe\x00\x07START" + TINY_JPEG[20:]
         done_jpg = TINY_JPEG[:20] + b"\xff\xfe\x00\x06DONE" + TINY_JPEG[20:]
+        reg_jpg = TINY_JPEG[:20] + b"\xff\xfe\x00\x08REGISTER" + TINY_JPEG[20:]
         start_fix.write_bytes(start_jpg)
         done_fix.write_bytes(done_jpg)
+        reg_fix.write_bytes(reg_jpg)
 
-    # Determine free port
     port = 8000
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         try:
@@ -317,6 +340,7 @@ def task_e2e(args: list[str]) -> int:
     env["VAARI_DATA_DIR"] = str(data_dir)
     env["VAARI_DEMO_PASSCODE"] = "change-me"
     env["VAARI_PUBLIC_BASE_URL"] = f"http://127.0.0.1:{port}"
+    env["VAARI_READER"] = "mock"
 
     py = get_venv_python()
     print(f"Initializing temporary database at {db_path}...")
@@ -335,7 +359,6 @@ def task_e2e(args: list[str]) -> int:
         stderr=subprocess.DEVNULL,
     )
 
-    # Wait for /api/health
     health_url = f"http://127.0.0.1:{port}/api/health"
     ready = False
     t0 = time.time()
@@ -351,7 +374,11 @@ def task_e2e(args: list[str]) -> int:
     if not ready:
         print("Test server failed to start within 20s.")
         if os.name == "nt":
-            subprocess.run(["taskkill", "/F", "/T", "/PID", str(server_proc.pid)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            subprocess.run(
+                ["taskkill", "/F", "/T", "/PID", str(server_proc.pid)],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
         else:
             server_proc.terminate()
         temp_dir.cleanup()
@@ -367,7 +394,11 @@ def task_e2e(args: list[str]) -> int:
 
     print("Stopping test server...")
     if os.name == "nt":
-        subprocess.run(["taskkill", "/F", "/T", "/PID", str(server_proc.pid)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.run(
+            ["taskkill", "/F", "/T", "/PID", str(server_proc.pid)],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
     else:
         server_proc.terminate()
         try:
@@ -382,7 +413,10 @@ def task_e2e(args: list[str]) -> int:
 def main():
     if len(sys.argv) < 2:
         print("Usage: python tasks.py <task> [args]")
-        print("Available tasks: setup, dev, test, seed, reset, smoke, serve, tunnel, build-web, e2e")
+        print(
+            "Available tasks: setup, dev, test, seed, reset, smoke, serve, tunnel, "
+            "build-web, e2e, reader-eval, purge-images"
+        )
         sys.exit(1)
 
     task = sys.argv[1]
@@ -408,9 +442,10 @@ def main():
         sys.exit(task_tunnel())
     elif task == "e2e":
         sys.exit(task_e2e(extra_args))
-    elif task in ("reader-eval", "purge-images"):
-        print("not built yet")
-        sys.exit(0)
+    elif task == "reader-eval":
+        sys.exit(task_reader_eval())
+    elif task == "purge-images":
+        sys.exit(task_purge_images(extra_args))
     else:
         print(f"Unknown task: {task}")
         sys.exit(1)

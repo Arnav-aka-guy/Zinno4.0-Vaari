@@ -2,9 +2,12 @@
 
 from contextlib import asynccontextmanager
 from pathlib import Path
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.exceptions import HTTPException as StarletteHTTPException
+from starlette.routing import Match, Route
+
 from app.db import Base, get_engine, get_session_factory
 from app.errors import setup_error_handlers
 import app.models  # ensure models are registered
@@ -12,6 +15,7 @@ from app.routes.common import get_or_create_home_centre
 from app.routes.dashboard import router as dashboard_router
 from app.routes.driver import router as driver_router
 from app.routes.health import router as health_router
+from app.routes.intake import router as intake_router
 from app.routes.machines import router as machines_router
 from app.routes.plots import router as plots_router
 from app.routes.records import router as records_router
@@ -22,9 +26,7 @@ from app.routes.slots import router as slots_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Create tables at startup
     Base.metadata.create_all(bind=get_engine())
-    # Ensure home centre exists
     session_factory = get_session_factory()
     with session_factory() as session:
         get_or_create_home_centre(session)
@@ -34,10 +36,8 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Vaari Backend", version="0.1", lifespan=lifespan)
 
-# Configure error handlers
 setup_error_handlers(app)
 
-# Mount API routers
 app.include_router(health_router, prefix="/api")
 app.include_router(requests_router, prefix="/api")
 app.include_router(machines_router, prefix="/api")
@@ -47,19 +47,19 @@ app.include_router(slots_router, prefix="/api")
 app.include_router(driver_router, prefix="/api")
 app.include_router(records_router, prefix="/api")
 app.include_router(dashboard_router, prefix="/api")
+app.include_router(intake_router, prefix="/api")
 
-from starlette.routing import Route, Match
-from starlette.exceptions import HTTPException as StarletteHTTPException
-from fastapi import Request
-
-# Serve frontend build if available (Phase 2)
 web_dist = Path(__file__).parent.parent / "web" / "dist"
+
 
 class NonApiRoute(Route):
     def matches(self, scope):
-        if scope["type"] == "http" and (scope["path"] == "/api" or scope["path"].startswith("/api/")):
+        if scope["type"] == "http" and (
+            scope["path"] == "/api" or scope["path"].startswith("/api/")
+        ):
             return Match.NONE, {}
         return super().matches(scope)
+
 
 async def spa_fallback(request: Request):
     full_path = request.path_params.get("full_path", "")
@@ -69,9 +69,14 @@ async def spa_fallback(request: Request):
     index_file = web_dist / "index.html"
     if index_file.exists():
         return FileResponse(index_file)
-    raise StarletteHTTPException(status_code=404, detail="Frontend not built. Run 'python tasks.py build-web'.")
+    raise StarletteHTTPException(
+        status_code=404,
+        detail="Frontend not built. Run 'python tasks.py build-web'.",
+    )
 
-app.router.routes.append(NonApiRoute("/{full_path:path}", endpoint=spa_fallback, methods=["GET", "HEAD"]))
+
+app.router.routes.append(
+    NonApiRoute("/{full_path:path}", endpoint=spa_fallback, methods=["GET", "HEAD"])
+)
 if (web_dist / "assets").exists():
     app.mount("/assets", StaticFiles(directory=web_dist / "assets"), name="assets")
-

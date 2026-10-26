@@ -161,6 +161,11 @@ export interface RecordVerify {
 }
 
 // ── Will-miss item ───────────────────────────────────────────
+export interface AlternativeCentreItem {
+  name: string;
+  distance_km: number;
+}
+
 export interface WillMissItem {
   request_id: number;
   village: string;
@@ -174,6 +179,7 @@ export interface WillMissItem {
   next_action: string;
   nearest_alternative: string | null;
   alternative_distance_km: number | null;
+  rescue_options?: AlternativeCentreItem[];
 }
 
 // ── Schedule day ─────────────────────────────────────────────
@@ -187,6 +193,17 @@ export interface ScheduleDay {
 }
 
 // ── Dashboard summary ────────────────────────────────────────
+export interface FlaggedJobSummary {
+  slot_id: number;
+  request_id: string;
+  village: string;
+  machine: string;
+  acres: number;
+  service_date: string;
+  flags: string[];
+  record_token: string | null;
+}
+
 export interface DashboardSummary {
   total: number;
   needs_info: number;
@@ -199,6 +216,7 @@ export interface DashboardSummary {
   by_reason: Record<string, number>;
   by_village: Record<string, number>;
   today: string;
+  flagged_jobs?: FlaggedJobSummary[];
 }
 
 // ── Slot message ─────────────────────────────────────────────
@@ -230,6 +248,54 @@ export interface DriverResponse {
   machine: SlotMachine;
   date: string;
   slots: SlotOut[];
+}
+
+// ── Intake (Phase 3) ─────────────────────────────────────────
+export interface IntakeRowFields {
+  phone: string | null;
+  name: string | null;
+  village: string | null;
+  acres: number | string | null;
+  service_type: string | null;
+  harvest_date: string | null;
+  note?: string | null;
+}
+
+export interface IntakeRow {
+  row: number;
+  fields: IntakeRowFields;
+  confidence: Record<string, number>;
+  issues: string[];
+}
+
+export interface IntakeOut {
+  intake_id: number;
+  reader: string;
+  latency_ms: number | null;
+  status: string;
+  rows: IntakeRow[];
+}
+
+export interface IntakeConfirmRowIn {
+  row: number;
+  fields: Record<string, unknown>;
+  skip?: boolean;
+  consent_service?: boolean;
+  consent_evidence?: boolean;
+  consent_share?: boolean;
+}
+
+export interface IntakeConfirmError {
+  row: number;
+  field: string;
+  issues?: string[];
+  message: string;
+}
+
+export interface IntakeConfirmResult {
+  created_request_ids: number[];
+  skipped_rows: number[];
+  errors: IntakeConfirmError[];
 }
 
 // ── Request body types ───────────────────────────────────────
