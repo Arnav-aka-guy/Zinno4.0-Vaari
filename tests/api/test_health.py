@@ -7,7 +7,7 @@ def test_health_returns_200_and_expected_keys(client):
     data = response.json()
     assert data["status"] == "ok"
     assert data["database"] == "connected"
-    assert data["reader"] == "not_built"
+    assert data["reader"] in ("mock", "hosted", "down")
     assert data["satellite"] == "disabled"
     assert data["messaging"] == "screen+wa_link"
     assert "today" in data

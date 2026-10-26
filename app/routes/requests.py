@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app import clock
 from app.auth import require_passcode
 from app.db import get_db
-from app.enums import to_x100
+from app.enums import ServiceType, to_x100
 from app.errors import VaariError
 from app.event_log import log_event
 from app.models import Farmer, Plot, Request, Slot, Village
@@ -18,12 +18,14 @@ from app.scheduler.service import run_for_centre
 router = APIRouter(prefix="/requests", tags=["requests"])
 
 
-@router.post("", response_model=RequestOut, status_code=status.HTTP_201_CREATED)
-def create_request(
+def create_request_record(
+    session: Session,
     payload: RequestIn,
-    session: Session = Depends(get_db),
-    _passcode: str = Depends(require_passcode),
-):
+    source: str = "form",
+    run_scheduler: bool = True,
+    extra_log_payload: dict | None = None,
+) -> Request:
+    """Shared service function to create a Farmer, Plot, and Request row."""
     if not payload.consent_service:
         raise VaariError(
             error_code="VALIDATION_ERROR",
@@ -90,9 +92,14 @@ def create_request(
     session.flush()
 
     # 3. Dates & Status
+    service_val = (
+        payload.service_type.value
+        if isinstance(payload.service_type, ServiceType)
+        else str(payload.service_type)
+    )
     sow_by, deadline_date, deadline_overridden = compute_dates(
         harvest_date=payload.harvest_date,
-        service_type=payload.service_type,
+        service_type=service_val,
         given_deadline=payload.deadline_date,
     )
 
@@ -102,8 +109,8 @@ def create_request(
         centre_id=home_centre.id,
         farmer_id=farmer.id,
         plot_id=plot.id,
-        service_type=payload.service_type.value,
-        source="form",
+        service_type=service_val,
+        source=source,
         acres_x100=acres_x100,
         harvest_date=payload.harvest_date,
         sow_by=sow_by,
@@ -122,19 +129,38 @@ def create_request(
     session.add(req)
     session.flush()
 
+    log_payload = {"source": source}
+    if extra_log_payload:
+        log_payload.update(extra_log_payload)
+
     log_event(
         session=session,
         actor="operator",
         entity="request",
         entity_id=req.id,
         event="created",
-        payload={"source": "form"},
+        payload=log_payload,
     )
 
-    # 4. Trigger scheduler run
-    run_for_centre(session, home_centre.id)
-    session.commit()
+    if run_scheduler:
+        run_for_centre(session, home_centre.id)
 
+    return req
+
+
+@router.post("", response_model=RequestOut, status_code=status.HTTP_201_CREATED)
+def create_request(
+    payload: RequestIn,
+    session: Session = Depends(get_db),
+    _passcode: str = Depends(require_passcode),
+):
+    req = create_request_record(
+        session=session,
+        payload=payload,
+        source="form",
+        run_scheduler=True,
+    )
+    session.commit()
     return serialize_request(session, req)
 
 
@@ -160,7 +186,6 @@ def list_requests(
             Slot.service_date == date, Slot.status != "cancelled"
         )
 
-    # Sorted by (deadline_date, id), nulls last
     query = query.order_by(Request.deadline_date.asc().nullslast(), Request.id.asc())
     results = query.all()
     return [serialize_request(session, r) for r in results]
@@ -196,7 +221,6 @@ def patch_request(
             http_status=409,
         )
 
-    # Cancel unstarted slot if present
     slot = session.query(Slot).filter_by(request_id=req.id).filter(Slot.status != "cancelled").first()
     if slot is not None:
         if slot.status in ("in_progress", "done"):
@@ -234,7 +258,6 @@ def patch_request(
             plot.centroid_lon = plot.pin_lon
             plot.location_source = "pin"
 
-    # Dates recomputation
     new_harvest = payload.harvest_date if payload.harvest_date is not None else req.harvest_date
     if payload.deadline_date is not None:
         new_deadline = payload.deadline_date
