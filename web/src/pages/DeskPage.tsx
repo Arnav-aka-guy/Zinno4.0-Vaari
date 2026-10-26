@@ -6,6 +6,7 @@ import NewRequestForm from '../components/NewRequestForm';
 import RequestDetailPanel from '../components/RequestDetailPanel';
 import WillMissTab from '../components/WillMissTab';
 import MachinesTab from '../components/MachinesTab';
+import DeskMapPanel from '../optional/DeskMapPanel';
 import {
   getDashboardSummary,
   getRequests,
@@ -31,7 +32,7 @@ export default function DeskPage() {
   const [todaySchedule, setTodaySchedule] = useState<ScheduleDay[]>([]);
   const [todayDate, setTodayDate] = useState<string>('');
 
-  const [activeTab, setActiveTab] = useState<'requests' | 'will_miss' | 'machines'>('requests');
+  const [activeTab, setActiveTab] = useState<'requests' | 'will_miss' | 'machines' | 'map'>('requests');
   const [statusFilter, setStatusFilter] = useState('all');
   const [villageFilter, setVillageFilter] = useState('all');
   const [selectedRequest, setSelectedRequest] = useState<RequestOut | null>(null);
@@ -221,6 +222,16 @@ export default function DeskPage() {
         >
           Machines ({machines.length})
         </button>
+        <button
+          id="tab-map"
+          type="button"
+          role="tab"
+          aria-selected={activeTab === 'map'}
+          className={`tab-btn ${activeTab === 'map' ? 'active' : ''}`}
+          onClick={() => setActiveTab('map')}
+        >
+          Map ({todaySchedule.reduce((acc, d) => acc + d.slots.length, 0)} today)
+        </button>
       </div>
 
       {/* Tab 1: Requests Table */}
@@ -346,6 +357,15 @@ export default function DeskPage() {
             onRefreshAll={loadDeskData}
           />
         </div>
+      )}
+
+      {activeTab === 'map' && (
+        <DeskMapPanel
+          requests={requests}
+          schedule={todaySchedule}
+          todayDate={todayDate}
+          onSelectRequest={(req) => setSelectedRequest(req)}
+        />
       )}
 
       <RequestDetailPanel
