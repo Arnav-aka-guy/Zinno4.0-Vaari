@@ -4,6 +4,18 @@ All notable changes are recorded here. The format follows Keep a Changelog, and 
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-10-26
+
+### Added (Phase 3 Intelligence, Evidence & Hardening)
+- Register extraction pipeline (`app/intake/`): `RegisterReader` protocol, deterministic 6-row `MockRegisterReader`, `HostedVisionReader` behind `VAARI_ALLOW_HOSTED_READER=true` privacy gate with 20s timeout and 1-retry JSON self-correction, and `validate_row` supporting Gurmukhi service names and flexible dates.
+- Reader evaluation harness (`python tasks.py reader-eval`) writing count-based evaluation metrics to `examples/register_pages/EVAL.md`.
+- Register intake API (`app/routes/intake.py`): `POST /api/intake/register-photo`, `GET /api/intake/{id}`, `GET /api/intake/{id}/image`, `POST /api/intake/{id}/confirm`, and retention cleanup task (`python tasks.py purge-images [--dry-run]`).
+- Register Confirmation Screen (`/intake`, `web/src/pages/IntakePage.tsx`) with persistent privacy warning banner, side-by-side page preview and editable table, <0.8 amber confidence cells, red issue cells, URL `?id=` reload survival, and 503 fallback reusing `NewRequestForm` beside the stored photo.
+- Pure geodesic polygon area (`pyproj.Geod`) and UTM Zone 43N (`EPSG:32643`) position checks (`app/evidence/area.py`, `position.py`, `rules.py`) wired into `POST /api/plots`, `start_slot`, `done_slot`, and `run_checks` (`position_mismatch`, `too_fast`, `exact_duplicate_photo`, `code_missing`, `code_wrong`).
+- Bulk plot loader `scripts/load_plots.py`, venue demo polygon `examples/demo_plot.geojson`, and setup guide `docs/DEMO_PLOT.md`.
+- Officer flagged-jobs review table and Tier 2 `GET /api/dashboard/usage.csv` export with one-click download button on `/officer`, spatial map panel (`web/src/optional/DeskMapPanel.tsx`), plus `rescue_options` on `/api/schedule/will-miss`.
+- Complete fallback test suite (`tests/api/test_step08_fallbacks.py`, `web/e2e/fallbacks.spec.ts`, `docs/FALLBACK_RESULTS.md`) and full 8-step Playwright E2E scenario (`web/e2e/full_loop.spec.ts`, `docs/READINESS.md`).
+
 ### Added (Phase 2 Frontend & Tier 0 Loop - 25 Oct 2026)
 - Modern, accessible React 18 + TypeScript + Vite frontend under `web/` with plain CSS design system.
 - Operator Desk (`/desk`) with summary counters, 15s intake form, request reflow panel, machines tab, and copyable WhatsApp message.

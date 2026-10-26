@@ -2,7 +2,7 @@
 
 **Vaari reduces coordination friction between crop-residue machinery and farmers during the narrow harvest-to-sowing window.** It reads the paper register a hiring-centre operator already keeps, schedules each request against its sowing deadline, shows which requests will miss and why, and closes every job with evidence from the phone already in the field.
 
-> **Status: design complete, build pending.** The first build happens at a 24-hour hackathon on 30–31 Oct 2026 under a no-pre-built-code rule. Until then this repository holds design, research and test plans only. The git history is the evidence: the first product commit lands at hour 0. Nothing here is claimed as measured unless it says so. The build is split into three phases built one after another; [docs/CONTRACT.md](docs/CONTRACT.md) is the single source of truth between them, and [docs/PHASES.md](docs/PHASES.md) says who builds what.
+> **Status: v0.1 MVP built and verified (26 Oct 2026).** Phases 1 (backend core), 2 (operator, driver, officer, and record screens), and 3 (register reader, geodesic polygon checks, non-punitive evidence flags, fallback hardening, full Playwright E2E, and Tier 2 enhancements) are complete and tagged `v0.1.0`. Run `python tasks.py setup && python tasks.py reset && python tasks.py test && python tasks.py e2e` to verify the entire stack offline.
 
 [Build contract](docs/CONTRACT.md) · [Phases](docs/PHASES.md) · [Architecture](docs/ARCHITECTURE.md) · [API](docs/API.md) · [Build plan](docs/BUILD_PLAN.md) · [Testing](docs/TESTING.md) · [Privacy](docs/PRIVACY.md) · [Prior art](docs/PRIOR_ART.md) · [Roadmap](docs/ROADMAP.md) · [Decisions](docs/DECISIONS.md)
 
@@ -29,6 +29,23 @@
 | communicate a committed slot | production scalability |
 | capture field evidence and generate a service record | that operators will adopt it |
 | keep working when the AI model, the tunnel or the satellite source fails, and say so on screen | that coordination, not price or shortage, is the binding constraint |
+
+## Reality ledger (v0.1)
+
+Every component in Vaari v0.1 is labelled honestly by its implementation status:
+
+| Component | Status in v0.1 | What is real vs. simulated |
+| --- | --- | --- |
+| **Deadline-first scheduler (`app/scheduler/plan.py`)** | **Production-grade core** | Pure, deterministic integer-hundredths (`acres_x100`) scheduler with inclusive deadlines, nearest-neighbour daily sequencing, and structured reason codes |
+| **Slot state machine & SHA-256 record hash (`app/evidence/`)** | **Production-grade core** | Enforced transitions (`scheduled -> in_progress -> done`), magic-bytes photo validation, and canonical JSON (`v1`) SHA-256 tamper verification |
+| **Geodesic polygon & position checks (`area.py`, `position.py`)** | **Production-grade core** | WGS84 geodesic acreage (`pyproj.Geod`) and UTM Zone 43N (`EPSG:32643`) point-to-polygon distance with `max(30m, accuracy_m)` tolerance |
+| **Register reader (`app/intake/`)** | **Mock (default) + Hosted Vision** | Automated tests and offline demos use `MockRegisterReader` (badged `reader: mock`). `HostedVisionReader` (Gemini / Anthropic) is locked behind `VAARI_ALLOW_HOSTED_READER=true` and used **only on synthetic pages** |
+| **Farmer consent (`farmer.consent_*`)** | **Simulated** | Ticked by the operator during intake; every screen and record carries the `consent simulated` badge |
+| **Device GPS position (`evidence.lat/lon`)** | **Self-reported by phone** | Reported by the browser's Geolocation API; when unavailable or denied, jobs still close with the `position self-reported` badge |
+| **WhatsApp notification (`app/messaging/`)** | **Shortcut (`wa.me` link + screen)** | Renders bilingual Punjabi/English text on screen and opens a prefilled `wa.me` click-to-chat link; no paid messaging API required |
+| **Access control (`app/auth.py`)** | **Demo shortcut (DEMO ONLY)** | Shared passcode (`X-Vaari-Passcode`) for operator/officer routes and unguessable 128-bit link tokens for driver/record URLs |
+| **Demo dataset (`app/seed/seed.py`)** | **Seeded fictional data** | 40 fictional requests generated relative to `clock.today()`; every seeded item carries the `seeded request` badge |
+| **Satellite sensing (`app/optional/`)** | **Disabled in v0.1** | Core never imports `app/optional/`; `/api/health` reports `satellite: "disabled"` |
 
 ## The problem, in three sourced numbers
 
