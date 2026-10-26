@@ -34,12 +34,26 @@ export default function StatusStrip() {
     );
   }
 
-  // Dependency status calculations
   const dbStatus = health?.database === 'connected' ? 'ok' : (health?.database || 'down');
   const dbTone = dbStatus === 'ok' ? 'pill-green' : 'pill-red';
 
-  const readerStatus = health?.reader === 'hosted' ? 'ok' : health?.reader === 'mock' ? 'mock' : 'not built';
-  const readerTone = readerStatus === 'ok' ? 'pill-green' : readerStatus === 'mock' ? 'pill-amber' : 'pill-grey';
+  const readerRaw = health?.reader || 'not_built';
+  const readerStatus =
+    readerRaw === 'hosted'
+      ? 'ok'
+      : readerRaw === 'mock'
+      ? 'mock'
+      : readerRaw === 'down'
+      ? 'down'
+      : 'not built';
+  const readerTone =
+    readerStatus === 'ok'
+      ? 'pill-green'
+      : readerStatus === 'mock'
+      ? 'pill-amber'
+      : readerStatus === 'down'
+      ? 'pill-red'
+      : 'pill-grey';
 
   const msgStatus = health?.messaging || 'screen+wa_link';
   const msgTone = msgStatus === 'live' ? 'pill-green' : msgStatus === 'mock' ? 'pill-amber' : 'pill-grey';

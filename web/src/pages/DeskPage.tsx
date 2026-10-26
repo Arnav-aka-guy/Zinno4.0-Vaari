@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import StatusStrip from '../components/StatusStrip';
 import Badge from '../components/Badge';
 import NewRequestForm from '../components/NewRequestForm';
@@ -30,7 +31,6 @@ export default function DeskPage() {
   const [todaySchedule, setTodaySchedule] = useState<ScheduleDay[]>([]);
   const [todayDate, setTodayDate] = useState<string>('');
 
-  // UI state
   const [activeTab, setActiveTab] = useState<'requests' | 'will_miss' | 'machines'>('requests');
   const [statusFilter, setStatusFilter] = useState('all');
   const [villageFilter, setVillageFilter] = useState('all');
@@ -40,7 +40,6 @@ export default function DeskPage() {
   const [runningScheduler, setRunningScheduler] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Load all initial desk data
   const loadDeskData = useCallback(async () => {
     setError(null);
     try {
@@ -60,7 +59,6 @@ export default function DeskPage() {
       setMachines(machinesData);
       setTodaySchedule(scheduleData);
 
-      // If a request is currently selected in side panel, refresh its data
       setSelectedRequest(prev => {
         if (!prev) return null;
         return requestsData.find(r => r.id === prev.id) || null;
@@ -84,7 +82,6 @@ export default function DeskPage() {
     loadDeskData();
   }, [loadDeskData]);
 
-  // Run scheduler action
   const handleRunScheduler = async () => {
     setRunningScheduler(true);
     try {
@@ -101,7 +98,6 @@ export default function DeskPage() {
     }
   };
 
-  // Distinct villages for filtering & suggestions
   const villagesList = useMemo(() => {
     const set = new Set<string>();
     requests.forEach(r => {
@@ -110,7 +106,6 @@ export default function DeskPage() {
     return Array.from(set).sort();
   }, [requests]);
 
-  // Filtered requests list
   const filteredRequests = useMemo(() => {
     return requests.filter(r => {
       if (statusFilter !== 'all' && r.status !== statusFilter) return false;
@@ -119,7 +114,6 @@ export default function DeskPage() {
     });
   }, [requests, statusFilter, villageFilter]);
 
-  // Handle clicking a request from will-miss tab
   const handleSelectRequestId = (id: number) => {
     const found = requests.find(r => r.id === id);
     if (found) {
@@ -138,7 +132,14 @@ export default function DeskPage() {
           <p className="page-subtitle">Real-time request intake, machine dispatch, and schedule reflow</p>
         </div>
 
-        <div className="desk-header-actions">
+        <div className="desk-header-actions" style={{ display: 'flex', gap: '0.5rem' }}>
+          <Link
+            to="/intake"
+            id="btn-add-register-photo"
+            className="btn btn-secondary"
+          >
+            📷 Add from register photo
+          </Link>
           <button
             id="btn-run-scheduler"
             type="button"
@@ -225,7 +226,6 @@ export default function DeskPage() {
       {/* Tab 1: Requests Table */}
       {activeTab === 'requests' && (
         <div className="card table-card" id="requests-tab-content">
-          {/* Filters Bar */}
           <div className="filters-bar">
             <div className="filter-group">
               <label htmlFor="filter-status">Status:</label>
@@ -265,7 +265,6 @@ export default function DeskPage() {
             </div>
           </div>
 
-          {/* Table */}
           {loading ? (
             <div className="loading-state">Loading requests…</div>
           ) : filteredRequests.length === 0 ? (
@@ -332,14 +331,12 @@ export default function DeskPage() {
         </div>
       )}
 
-      {/* Tab 2: Will Miss Tab */}
       {activeTab === 'will_miss' && (
         <div className="card" id="will-miss-tab-content">
           <WillMissTab onSelectRequest={handleSelectRequestId} />
         </div>
       )}
 
-      {/* Tab 3: Machines Tab */}
       {activeTab === 'machines' && (
         <div className="card" id="machines-tab-content">
           <MachinesTab
@@ -351,7 +348,6 @@ export default function DeskPage() {
         </div>
       )}
 
-      {/* Side Panel for Selected Request */}
       <RequestDetailPanel
         request={selectedRequest}
         onClose={() => setSelectedRequest(null)}
