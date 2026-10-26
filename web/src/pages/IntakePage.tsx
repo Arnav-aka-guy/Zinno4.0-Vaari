@@ -34,21 +34,53 @@ interface EditableRowState {
   confirmedRequestId?: number;
 }
 
+function normalizeDateStr(d: string): { date: string; wasExpanded: boolean } {
+  if (!d) return { date: '', wasExpanded: false };
+  const s = d.trim();
+  // Match DD-MM-YY, DD/MM/YY, DD.MM.YY
+  const match2Digit = s.match(/^(\d{1,2})[-/. ](\d{1,2})[-/. ](\d{2})$/);
+  if (match2Digit) {
+    const p1 = parseInt(match2Digit[1], 10);
+    const p2 = parseInt(match2Digit[2], 10);
+    const p3 = parseInt(match2Digit[3], 10);
+    // If year is in front (YY-MM-DD e.g. 26-10-22)
+    if (p1 >= 24 && p1 <= 30 && p3 <= 31) {
+      const year = `20${String(p1).padStart(2, '0')}`;
+      const month = String(p2).padStart(2, '0');
+      const day = String(p3).padStart(2, '0');
+      return { date: `${year}-${month}-${day}`, wasExpanded: true };
+    }
+    // Standard DD-MM-YY (e.g. 22-10-26)
+    const year = `20${String(p3).padStart(2, '0')}`;
+    const month = String(p2).padStart(2, '0');
+    const day = String(p1).padStart(2, '0');
+    return { date: `${year}-${month}-${day}`, wasExpanded: true };
+  }
+  return { date: s, wasExpanded: false };
+}
+
 function buildEditableRows(draft: IntakeOut): EditableRowState[] {
-  return draft.rows.map((r) => ({
-    row: r.row,
-    phone: r.fields.phone != null ? String(r.fields.phone) : '',
-    name: r.fields.name != null ? String(r.fields.name) : '',
-    village: r.fields.village != null ? String(r.fields.village) : '',
-    acres: r.fields.acres != null ? String(r.fields.acres) : '',
-    service_type: r.fields.service_type != null ? String(r.fields.service_type) : 'super_seeder',
-    harvest_date: r.fields.harvest_date != null ? String(r.fields.harvest_date) : '',
-    confidence: r.confidence || {},
-    issues: r.issues || [],
-    editedFields: {},
-    consentAgreed: true,
-    skip: false,
-  }));
+  return draft.rows.map((r) => {
+    const rawDate = r.fields.harvest_date != null ? String(r.fields.harvest_date) : '';
+    const norm = normalizeDateStr(rawDate);
+    const filteredIssues = norm.wasExpanded
+      ? (r.issues || []).filter((iss) => !iss.toLowerCase().startsWith('harvest_date:'))
+      : r.issues || [];
+    return {
+      row: r.row,
+      phone: r.fields.phone != null ? String(r.fields.phone) : '',
+      name: r.fields.name != null ? String(r.fields.name) : '',
+      village: r.fields.village != null ? String(r.fields.village) : '',
+      acres: r.fields.acres != null ? String(r.fields.acres) : '',
+      service_type: r.fields.service_type != null ? String(r.fields.service_type) : 'super_seeder',
+      harvest_date: norm.date,
+      confidence: r.confidence || {},
+      issues: filteredIssues,
+      editedFields: {},
+      consentAgreed: true,
+      skip: false,
+    };
+  });
 }
 
 export default function IntakePage() {

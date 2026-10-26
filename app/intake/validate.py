@@ -75,6 +75,17 @@ def _parse_harvest_date(raw_val: Any, today: date) -> tuple[str | None, str | No
         except ValueError:
             return s, "harvest_date: invalid calendar date"
 
+    # 2b. Try DD-MM-YY, DD/MM/YY, DD.MM.YY (or YY-MM-DD)
+    elif re.match(r"^\d{1,2}[-/.]\d{1,2}[-/.]\d{2}$", s):
+        try:
+            p1, p2, p3 = [int(p) for p in re.split(r"[-/.]", s)]
+            if p1 == (today.year % 100) and p3 <= 31:
+                parsed = date(2000 + p1, p2, p3)
+            else:
+                parsed = date(2000 + p3, p2, p1)
+        except ValueError:
+            return s, "harvest_date: invalid calendar date"
+
     # 3. Try DD/MM or DD-MM (assume current season's year: today.year)
     elif re.match(r"^\d{1,2}[/-]\d{1,2}$", s):
         sep = "/" if "/" in s else "-"
