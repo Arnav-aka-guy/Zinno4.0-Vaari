@@ -4,6 +4,19 @@ All notable changes are recorded here. The format follows Keep a Changelog, and 
 
 ## [Unreleased]
 
+### Polish & Hardening Pass (29 Oct 2026)
+- **OpenAPI & Freshness Enforcement**: Regenerated `docs/openapi.json` from live application (`app.openapi()`) with LF line endings containing all 25 API paths (including `/api/intake/*` and `/api/dashboard/usage.csv`), and added an automated drift test `tests/api/test_openapi_freshness.py` that fails if committed schema is out of date.
+- **Handoff Links & Dependencies**: Updated `HANDOFF.md` to replace absolute `file:///` URLs with repo-relative paths, and documented `shapely` and `pyproj` additions for geodesic polygon and coordinate transformations.
+- **Continuous Integration**: Added `.github/workflows/ci.yml` running pytest across Python 3.12 and web build on Node 22 for all pushes and PRs; added CI status badge to `README.md`.
+- **Git Hygiene**: Narrowed blanket `*.txt` rule in `.gitignore` to specific dump/scratch files (`pipreqs*.txt`, `dump*.txt`, etc.) ensuring requirement files remain tracked.
+- **Dependency Split**: Separated test dependencies (`pytest`, `httpx`) into `requirements-dev.txt`, updating `tasks.py setup`, `CONTRIBUTING.md`, and CI workflow.
+- **Coordinate Transformation Modernization**: Replaced deprecated `shapely.ops.transform` in `app/evidence/position.py` and test suites with modern `pyproj.Transformer` and `shapely.transform`, eliminating deprecation warnings while preserving exact geodesic checks.
+- **Web Dependency Audit**: Audited `web/` dependencies (`npm audit`) for `react-router` vulnerabilities, documented that SSR-hydration and open-redirect paths are unreachable in static SPA, and noted non-breaking deferral of React Router v7 breaking upgrade in `notes/npm-audit.md`.
+- **Clean Documentation**: Removed obsolete `docs/PHASE1_MASTER_PROMPT.md` and verified zero broken links.
+- **Passcode Safety**: Enforced passcode validation in `python tasks.py tunnel` to refuse execution if `VAARI_DEMO_PASSCODE` is empty, `change-me`, or shorter than 12 characters; added unit tests (`tests/unit/test_tunnel_passcode.py`) and setup notes in `docs/DEMO_SETUP.md`.
+- **Reader Evaluation Guide**: Added `examples/register_pages/README.md` documenting synthetic register page creation, evaluation execution with mock and hosted models, and PII prevention; verified `.gitignore` blocks all register image files.
+- **Playwright Demo Screenshots**: Implemented automated screenshot capture (`web/e2e/screenshots.spec.ts` and `python tasks.py screenshots`) capturing Desk, Driver, Record, Officer, and Intake screens into `docs/screenshots/` and embedded visual walkthrough in `README.md`.
+
 ## [0.1.0] - 2026-10-26
 
 ### Added (Phase 3 Intelligence, Evidence & Hardening)
