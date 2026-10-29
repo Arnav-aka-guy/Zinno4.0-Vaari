@@ -1,4 +1,4 @@
-# Contributing
+﻿# Contributing
 
 Thank you for looking. Vaari is small on purpose, so the most useful contributions make an existing part more robust. Widening the product is rarely the right pull request.
 
@@ -19,6 +19,11 @@ Thank you for looking. Vaari is small on purpose, so the most useful contributio
 ## Workflow
 
 ```bash
+# Install runtime and dev/test dependencies
+pip install -r requirements.txt -r requirements-dev.txt
+# Or use the task runner (creates venv, installs all deps, builds web assets):
+python tasks.py setup
+
 make setup     # venv, npm install, pre-commit hooks
 make test      # unit, property and the end-to-end slice
 make lint      # ruff, mypy, eslint

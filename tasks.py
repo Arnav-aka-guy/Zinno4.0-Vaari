@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """Cross-platform task runner for Vaari (Phase 1, 2, 3). Standard library only."""
 
 import os
@@ -45,6 +45,12 @@ def task_setup() -> int:
     ret = run_cmd([str(py), "-m", "pip", "install", "-r", "requirements.txt"])
     if ret != 0:
         return ret
+    dev_req = ROOT / "requirements-dev.txt"
+    if dev_req.exists():
+        print("Installing requirements-dev.txt...")
+        ret = run_cmd([str(py), "-m", "pip", "install", "-r", str(dev_req)])
+        if ret != 0:
+            return ret
 
     web_dir = ROOT / "web"
     if web_dir.exists() and (web_dir / "package.json").exists():
