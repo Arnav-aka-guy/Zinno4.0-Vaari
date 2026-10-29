@@ -1,3 +1,5 @@
+﻿[![CI](https://github.com/kambojmayan-png/Vaari/actions/workflows/ci.yml/badge.svg)](https://github.com/kambojmayan-png/Vaari/actions/workflows/ci.yml)
+
 # Vaari (ਵਾਰੀ) — every field gets its turn
 
 **Vaari reduces coordination friction between crop-residue machinery and farmers during the narrow harvest-to-sowing window.** It reads the paper register a hiring-centre operator already keeps, schedules each request against its sowing deadline, shows which requests will miss and why, and closes every job with evidence from the phone already in the field.
