@@ -1,4 +1,4 @@
-# Handoff
+﻿# Handoff
 
 Each phase fills in its own section at the end of the phase, then pushes a git tag. The next phase reads this file instead of anyone's chat history. Keep it factual and short. Use the same headings in every section.
 
@@ -108,7 +108,7 @@ python3 tasks.py serve
 python3 tasks.py tunnel
 ```
 
-Full details on phone pairing, camera/GPS permissions, and venue fallback procedures are documented in [`docs/DEMO_SETUP.md`](file:///d:/Varri/varri/varri/docs/DEMO_SETUP.md).
+Full details on phone pairing, camera/GPS permissions, and venue fallback procedures are documented in [`docs/DEMO_SETUP.md`](docs/DEMO_SETUP.md).
 
 ### What works (each item with the test that proves it)
 1. **Passcode Protection & Session Persistence:** Unlocks operator views via `#passcode-input` using `sessionStorage`; automatic re-prompt on 401 (`web/src/components/PasscodeGate.tsx`, verified in `web/e2e/tier0_loop.spec.ts`).
@@ -139,13 +139,13 @@ Full details on phone pairing, camera/GPS permissions, and venue fallback proced
    - Added `e2e` to reset a temporary SQLite database, launch serve mode, run Playwright Chromium tests, and terminate cleanly.
 
 ### Frontend Map (Where everything lives)
-- **API Client:** [`web/src/api.ts`](file:///d:/Varri/varri/varri/web/src/api.ts) - Typed wrappers for all endpoints, sending `X-Vaari-Passcode` from `sessionStorage` and `X-Vaari-Slot-Token`.
-- **Types:** [`web/src/types.ts`](file:///d:/Varri/varri/varri/web/src/types.ts) - TypeScript definitions mirroring `docs/CONTRACT.md` schemas.
-- **Errors & Friendly Messages:** [`web/src/errors.ts`](file:///d:/Varri/varri/varri/web/src/errors.ts) - Maps `error_code` strings to plain English user-facing sentences.
-- **Passcode Gate:** [`web/src/components/PasscodeGate.tsx`](file:///d:/Varri/varri/varri/web/src/components/PasscodeGate.tsx) - Gatekeeper for operator screens.
-- **Status Strip:** [`web/src/components/StatusStrip.tsx`](file:///d:/Varri/varri/varri/web/src/components/StatusStrip.tsx) - 15s health poller displaying dependency pills and demo clock banner.
-- **Badges:** [`web/src/components/Badge.tsx`](file:///d:/Varri/varri/varri/web/src/components/Badge.tsx) - Reusable component for contract-specified provenance badges.
-- **End-to-End Tests:** [`web/e2e/tier0_loop.spec.ts`](file:///d:/Varri/varri/varri/web/e2e/tier0_loop.spec.ts) - Playwright Chromium test suite.
+- **API Client:** [`web/src/api.ts`](web/src/api.ts) - Typed wrappers for all endpoints, sending `X-Vaari-Passcode` from `sessionStorage` and `X-Vaari-Slot-Token`.
+- **Types:** [`web/src/types.ts`](web/src/types.ts) - TypeScript definitions mirroring `docs/CONTRACT.md` schemas.
+- **Errors & Friendly Messages:** [`web/src/errors.ts`](web/src/errors.ts) - Maps `error_code` strings to plain English user-facing sentences.
+- **Passcode Gate:** [`web/src/components/PasscodeGate.tsx`](web/src/components/PasscodeGate.tsx) - Gatekeeper for operator screens.
+- **Status Strip:** [`web/src/components/StatusStrip.tsx`](web/src/components/StatusStrip.tsx) - 15s health poller displaying dependency pills and demo clock banner.
+- **Badges:** [`web/src/components/Badge.tsx`](web/src/components/Badge.tsx) - Reusable component for contract-specified provenance badges.
+- **End-to-End Tests:** [`web/e2e/tier0_loop.spec.ts`](web/e2e/tier0_loop.spec.ts) - Playwright Chromium test suite.
 - **Adding a new page:**
   1. Create `web/src/pages/YourPage.tsx`.
   2. Add route in `web/src/App.tsx` (`<Route path="/your-route" element={<YourPage />} />`).
@@ -156,7 +156,7 @@ Full details on phone pairing, camera/GPS permissions, and venue fallback proced
 
 ### Things Phase 3 must know
 1. **Intake Route is Free:** The `/intake` route and `/api/intake/*` endpoints are completely free for Phase 3 to implement.
-2. **Desk Intake Form Reuse:** The intake form component at [`web/src/components/NewRequestForm.tsx`](file:///d:/Varri/varri/varri/web/src/components/NewRequestForm.tsx) can be directly imported and displayed alongside the uploaded register photo when the reader returns 503 (`READER_UNAVAILABLE`).
+2. **Desk Intake Form Reuse:** The intake form component at [`web/src/components/NewRequestForm.tsx`](web/src/components/NewRequestForm.tsx) can be directly imported and displayed alongside the uploaded register photo when the reader returns 503 (`READER_UNAVAILABLE`).
 3. **Driver Flags Display:** The Driver view renders auditing flags inside `#evidence-summary-ticks` (`.flags-list .badge-warning`) translated into plain words without blocking completion.
 4. **Officer Review Oversight:** The Officer dashboard displays the `Needs Review` counter card (`#metric-needs-review`) and provides status filters for filtering requests and slots requiring human oversight.
 
@@ -204,7 +204,8 @@ python tasks.py serve
 - `GET /api/dashboard/usage.csv`: Added Tier 2 CSV export route (`date,machine,jobs,acres`) from `docs/CONTRACT.md` §11.
 
 ### Libraries added beyond the contract, and why
-None required for default execution. `HostedVisionReader` uses `httpx` (already in `requirements.txt`) for zero-install compatibility.
+- `shapely`: Required for polygon geometry operations (point-in-polygon containment checks in `app/evidence/position.py`) used by evidence rules E1, E2, E5, and E8.
+- `pyproj`: Required for WGS84 geodesic area calculations (`pyproj.Geod`) and UTM Zone 43N coordinate transforms (`EPSG:32643`) used to compute accurate polygon acreages and GPS distance-from-pin checks. Both libraries are needed together: shapely handles geometry topology while pyproj provides the geodetic math for accurate real-world measurements.
 
 ### Reader evaluation counts & model confidence note
 - From `examples/register_pages/EVAL.md` (page1 against MockRegisterReader, prompt v1): 6 total rows, 4 rows usable without edits, 1 wrong phone, 1 wrong acres, 0 wrong dates/services/villages/names, 0.05s per page.
