@@ -1,15 +1,33 @@
-"""Pure position plausibility checks against a plot polygon or pin+acres circle (Step 04)."""
+﻿"""Pure position plausibility checks against a plot polygon or pin+acres circle (Step 04)."""
 
 import math
 from typing import Any
+
+import shapely
 from pyproj import Transformer
 from shapely.geometry import Point
-from shapely.ops import transform
 
 from app.evidence.area import SQM_PER_ACRE, parse_valid_polygon
 
 # Project WGS84 (lon, lat) -> UTM Zone 43N (EPSG:32643, metres, covers Punjab)
-_TO_UTM43N = Transformer.from_crs("EPSG:4326", "EPSG:32643", always_xy=True).transform
+_TRANSFORMER = Transformer.from_crs("EPSG:4326", "EPSG:32643", always_xy=True)
+
+
+def _to_utm(geometry: shapely.Geometry) -> shapely.Geometry:
+    """Reproject a Shapely geometry from WGS84 to UTM Zone 43N.
+
+    Uses shapely.transform (Shapely 2.x) instead of the deprecated shapely.ops.transform.
+    shapely.transform passes coordinates as an (N, 2) ndarray; we update x/y in-place
+    so no explicit numpy import is required beyond what shapely already pulls in.
+    """
+    def _project(coords):  # coords: ndarray shape (N, 2)
+        xs, ys = _TRANSFORMER.transform(coords[:, 0], coords[:, 1])
+        out = coords.copy()
+        out[:, 0] = xs
+        out[:, 1] = ys
+        return out
+
+    return shapely.transform(geometry, _project)
 
 
 def _extract_plot_attr(plot: Any, key: str, default: Any = None) -> Any:
@@ -58,7 +76,7 @@ def check_position(
             "position_state": "not_checked",
         }
 
-    pt_utm = transform(_TO_UTM43N, Point(float(lon), float(lat)))
+    pt_utm = _to_utm(Point(float(lon), float(lat)))
     acc = float(accuracy_m) if accuracy_m is not None else 0.0
     tolerance_m = max(30.0, acc)
 
@@ -67,14 +85,14 @@ def check_position(
     # 1. With a polygon: distance in UTM 43N metres from point to polygon (0 if inside)
     if geojson:
         poly_wgs84 = parse_valid_polygon(geojson)
-        poly_utm = transform(_TO_UTM43N, poly_wgs84)
+        poly_utm = _to_utm(poly_wgs84)
         if poly_utm.contains(pt_utm) or poly_utm.touches(pt_utm):
             dist_m = 0.0
         else:
             dist_m = round(float(poly_utm.distance(pt_utm)), 1)
     # 2. With only a pin and acres: circle around the pin with the plot's area
     elif pin_lat is not None and pin_lon is not None:
-        pin_utm = transform(_TO_UTM43N, Point(float(pin_lon), float(pin_lat)))
+        pin_utm = _to_utm(Point(float(pin_lon), float(pin_lat)))
         center_dist_m = float(pt_utm.distance(pin_utm))
         plot_acres = float(acres) if (acres is not None and float(acres) > 0) else 0.0
         radius_m = math.sqrt((plot_acres * SQM_PER_ACRE) / math.pi) if plot_acres > 0 else 0.0

@@ -1,13 +1,13 @@
-"""Unit tests for Step 04: pure evidence rules, position checks (E1-E8), and polygon geodesic area."""
+﻿"""Unit tests for Step 04: pure evidence rules, position checks (E1-E8), and polygon geodesic area."""
 
 from datetime import datetime, timedelta, timezone
 import hashlib
 import json
 import math
 import pytest
+import shapely
 from pyproj import Transformer
 from shapely.geometry import box
-from shapely.ops import transform
 
 from app.evidence.area import SQM_PER_ACRE, acres_of_polygon, centroid_of_polygon
 from app.evidence.position import check_position
@@ -33,7 +33,10 @@ def make_utm_rect_geojson(
 
     cx, cy = _TO_UTM43(center_lon, center_lat)
     rect_utm = box(cx - width_m / 2.0, cy - height_m / 2.0, cx + width_m / 2.0, cy + height_m / 2.0)
-    rect_wgs84 = transform(_TO_WGS84, rect_utm)
+    def _proj_wgs84(c):
+        xs, ys = _TO_WGS84(c[:, 0], c[:, 1])
+        o = c.copy(); o[:, 0] = xs; o[:, 1] = ys; return o
+    rect_wgs84 = shapely.transform(rect_utm, _proj_wgs84)
     return json.dumps(mapping(rect_wgs84))
 
 

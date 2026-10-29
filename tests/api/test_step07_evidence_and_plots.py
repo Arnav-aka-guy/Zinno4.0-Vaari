@@ -1,9 +1,9 @@
-"""API tests for Step 07: E1-E10 through the API, polygon plots, and record verification."""
+﻿"""API tests for Step 07: E1-E10 through the API, polygon plots, and record verification."""
 
 import json
+import shapely
 from pyproj import Transformer
 from shapely.geometry import box, mapping
-from shapely.ops import transform
 
 from app import clock
 from app.models import Plot, Request, Slot
@@ -21,7 +21,10 @@ def make_square_polygon_geojson(lat: float, lon: float, side_m: float = 100.0) -
     cx, cy = _TO_UTM43(lon, lat)
     half = side_m / 2.0
     poly_utm = box(cx - half, cy - half, cx + half, cy + half)
-    poly_wgs = transform(_TO_WGS84, poly_utm)
+    def _proj_wgs84(c):
+        xs, ys = _TO_WGS84(c[:, 0], c[:, 1])
+        o = c.copy(); o[:, 0] = xs; o[:, 1] = ys; return o
+    poly_wgs = shapely.transform(poly_utm, _proj_wgs84)
     return json.dumps(mapping(poly_wgs))
 
 
