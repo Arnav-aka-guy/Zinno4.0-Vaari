@@ -20,6 +20,9 @@ data/
 data/photos/
 data/cache/
 data/register_pages/
+examples/register_pages/*.jpg
+examples/register_pages/*.jpeg
+examples/register_pages/*.png
 
 # Staging and dumps
 .staging/
