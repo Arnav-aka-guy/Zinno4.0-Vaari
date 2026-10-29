@@ -1,4 +1,4 @@
-﻿# Handoff
+# Handoff
 
 Each phase fills in its own section at the end of the phase, then pushes a git tag. The next phase reads this file instead of anyone's chat history. Keep it factual and short. Use the same headings in every section.
 

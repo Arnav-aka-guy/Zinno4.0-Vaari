@@ -1,4 +1,4 @@
-﻿"""API tests for Step 07: E1-E10 through the API, polygon plots, and record verification."""
+"""API tests for Step 07: E1-E10 through the API, polygon plots, and record verification."""
 
 import json
 import shapely

@@ -1,4 +1,4 @@
-﻿"""Regression test: docs/openapi.json must match the live app schema.
+"""Regression test: docs/openapi.json must match the live app schema.
 
 Run automatically with `python tasks.py test`. If this test fails it means
 someone changed a route or schema without regenerating the committed file.

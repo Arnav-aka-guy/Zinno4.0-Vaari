@@ -1,4 +1,4 @@
-﻿"""Pure position plausibility checks against a plot polygon or pin+acres circle (Step 04)."""
+"""Pure position plausibility checks against a plot polygon or pin+acres circle (Step 04)."""
 
 import math
 from typing import Any

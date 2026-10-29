@@ -1,4 +1,4 @@
-﻿# Contributing
+# Contributing
 
 Thank you for looking. Vaari is small on purpose, so the most useful contributions make an existing part more robust. Widening the product is rarely the right pull request.
 

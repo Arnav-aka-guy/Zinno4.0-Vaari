@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """Cross-platform task runner for Vaari (Phase 1, 2, 3). Standard library only."""
 
 import os

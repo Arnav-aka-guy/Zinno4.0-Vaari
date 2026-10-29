@@ -1,4 +1,4 @@
-﻿[![CI](https://github.com/kambojmayan-png/Vaari/actions/workflows/ci.yml/badge.svg)](https://github.com/kambojmayan-png/Vaari/actions/workflows/ci.yml)
+[![CI](https://github.com/kambojmayan-png/Vaari/actions/workflows/ci.yml/badge.svg)](https://github.com/kambojmayan-png/Vaari/actions/workflows/ci.yml)
 
 # Vaari (ਵਾਰੀ) — every field gets its turn
 

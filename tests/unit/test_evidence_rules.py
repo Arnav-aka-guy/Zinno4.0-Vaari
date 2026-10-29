@@ -1,4 +1,4 @@
-﻿"""Unit tests for Step 04: pure evidence rules, position checks (E1-E8), and polygon geodesic area."""
+"""Unit tests for Step 04: pure evidence rules, position checks (E1-E8), and polygon geodesic area."""
 
 from datetime import datetime, timedelta, timezone
 import hashlib
