@@ -1,4 +1,4 @@
-# Python
+﻿# Python
 __pycache__/
 *.pyc
 .venv/
@@ -23,8 +23,12 @@ data/register_pages/
 
 # Staging and dumps
 .staging/
-*.txt
-!requirements.txt
+# Narrow: only ignore scratch/dump text files, not pinned requirement files.
+# Add new requirements-*.txt files with !requirements-dev.txt style exceptions.
+pipreqs*.txt
+pip-freeze*.txt
+dump*.txt
+*.log.txt
 
 # OS and editors
 .DS_Store
