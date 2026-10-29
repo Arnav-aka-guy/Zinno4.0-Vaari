@@ -757,6 +757,7 @@
               "application/json": {
                 "schema": {
                   "type": "object",
+                  "additionalProperties": true,
                   "title": "Response Trigger Schedule Run Api Schedule Run Post"
                 }
               }
@@ -841,7 +842,8 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "type": "object"
+                    "type": "object",
+                    "additionalProperties": true
                   },
                   "title": "Response Get Schedule Api Schedule Get"
                 }
@@ -894,7 +896,8 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "type": "object"
+                    "type": "object",
+                    "additionalProperties": true
                   },
                   "title": "Response Get Will Miss Requests Api Schedule Will Miss Get"
                 }
@@ -1057,6 +1060,7 @@
               "application/json": {
                 "schema": {
                   "type": "object",
+                  "additionalProperties": true,
                   "title": "Response Get Slot Message Api Slots  Id  Message Get"
                 }
               }
@@ -1428,6 +1432,7 @@
               "application/json": {
                 "schema": {
                   "type": "object",
+                  "additionalProperties": true,
                   "title": "Response Get Driver View Api Driver  Machine Token  Get"
                 }
               }
@@ -1513,6 +1518,7 @@
               "application/json": {
                 "schema": {
                   "type": "object",
+                  "additionalProperties": true,
                   "title": "Response Verify Service Record Api Records  Token  Verify Get"
                 }
               }
@@ -1628,7 +1634,304 @@
               "application/json": {
                 "schema": {
                   "type": "object",
+                  "additionalProperties": true,
                   "title": "Response Get Dashboard Summary Api Dashboard Summary Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/dashboard/usage.csv": {
+      "get": {
+        "tags": [
+          "dashboard"
+        ],
+        "summary": "Get Usage Csv",
+        "description": "Export acres per machine per day as CSV: date,machine,jobs,acres (Contract Section 11).",
+        "operationId": "get_usage_csv_api_dashboard_usage_csv_get",
+        "parameters": [
+          {
+            "name": "X-Vaari-Passcode",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Vaari-Passcode"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/intake/register-photo": {
+      "post": {
+        "tags": [
+          "intake"
+        ],
+        "summary": "Upload Register Photo",
+        "operationId": "upload_register_photo_api_intake_register_photo_post",
+        "parameters": [
+          {
+            "name": "X-Vaari-Passcode",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Vaari-Passcode"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_register_photo_api_intake_register_photo_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Upload Register Photo Api Intake Register Photo Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/intake/{id}": {
+      "get": {
+        "tags": [
+          "intake"
+        ],
+        "summary": "Get Intake Draft",
+        "operationId": "get_intake_draft_api_intake__id__get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Id"
+            }
+          },
+          {
+            "name": "X-Vaari-Passcode",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Vaari-Passcode"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Intake Draft Api Intake  Id  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/intake/{id}/image": {
+      "get": {
+        "tags": [
+          "intake"
+        ],
+        "summary": "Get Intake Image",
+        "operationId": "get_intake_image_api_intake__id__image_get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Id"
+            }
+          },
+          {
+            "name": "X-Vaari-Passcode",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Vaari-Passcode"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/intake/{id}/confirm": {
+      "post": {
+        "tags": [
+          "intake"
+        ],
+        "summary": "Confirm Intake",
+        "operationId": "confirm_intake_api_intake__id__confirm_post",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Id"
+            }
+          },
+          {
+            "name": "X-Vaari-Passcode",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Vaari-Passcode"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true,
+                "title": "Payload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Confirm Intake Api Intake  Id  Confirm Post"
                 }
               }
             }
@@ -1655,7 +1958,7 @@
             "anyOf": [
               {
                 "type": "string",
-                "format": "binary"
+                "contentMediaType": "application/octet-stream"
               },
               {
                 "type": "null"
@@ -1717,7 +2020,7 @@
             "anyOf": [
               {
                 "type": "string",
-                "format": "binary"
+                "contentMediaType": "application/octet-stream"
               },
               {
                 "type": "null"
@@ -1761,6 +2064,24 @@
         },
         "type": "object",
         "title": "Body_start_slot_endpoint_api_slots__id__start_post"
+      },
+      "Body_upload_register_photo_api_intake_register_photo_post": {
+        "properties": {
+          "photo": {
+            "anyOf": [
+              {
+                "type": "string",
+                "contentMediaType": "application/octet-stream"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Photo"
+          }
+        },
+        "type": "object",
+        "title": "Body_upload_register_photo_api_intake_register_photo_post"
       },
       "EvidenceDetail": {
         "properties": {
@@ -1872,6 +2193,7 @@
           "data_used": {
             "anyOf": [
               {
+                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -2327,7 +2649,14 @@
             "title": "Pin Lon"
           },
           "acres": {
-            "type": "number",
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Acres"
           },
           "geojson": {
@@ -2345,8 +2674,7 @@
         "type": "object",
         "required": [
           "farmer_phone",
-          "village",
-          "acres"
+          "village"
         ],
         "title": "PlotIn"
       },
@@ -2426,6 +2754,17 @@
               }
             ],
             "title": "Geojson"
+          },
+          "warning": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Warning"
           }
         },
         "type": "object",
@@ -3146,6 +3485,13 @@
           "type": {
             "type": "string",
             "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
           }
         },
         "type": "object",
