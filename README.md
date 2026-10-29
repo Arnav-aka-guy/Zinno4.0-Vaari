@@ -21,6 +21,20 @@
 7. The driver opens the slot and submits Start and Done evidence: time, position, photo.
 8. Vaari generates the service record and the officer dashboard updates.
 
+### Demo screens (fictional seeded data)
+
+| Operator Desk (`/desk`) | Register Intake (`/intake`) |
+| :---: | :---: |
+| ![Operator Desk](docs/screenshots/desk.png) | ![Register Intake](docs/screenshots/intake.png) |
+
+| Driver Execution (`/driver/:token`) | Service Audit Record (`/record/:token`) |
+| :---: | :---: |
+| ![Driver Screen](docs/screenshots/driver.png) | ![Audit Record](docs/screenshots/record.png) |
+
+| Officer Monitoring Dashboard (`/officer`) |
+| :---: |
+| ![Officer Dashboard](docs/screenshots/officer.png) |
+
 ## What the demo proves, and what it does not
 
 | The demo proves that Vaari can | The demo does **not** prove |

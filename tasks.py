@@ -331,6 +331,11 @@ def task_purge_images(args: list[str]) -> int:
     return 0
 
 
+def task_screenshots() -> int:
+    """Capture demo screenshots via Playwright into docs/screenshots/."""
+    return task_e2e(["e2e/screenshots.spec.ts"])
+
+
 def task_e2e(args: list[str]) -> int:
     """Run Playwright end-to-end tests against a freshly reset temporary database in serve mode."""
     import socket
@@ -449,7 +454,7 @@ def main():
         print("Usage: python tasks.py <task> [args]")
         print(
             "Available tasks: setup, dev, test, seed, reset, smoke, serve, tunnel, "
-            "build-web, e2e, reader-eval, purge-images"
+            "build-web, e2e, reader-eval, purge-images, screenshots"
         )
         sys.exit(1)
 
@@ -480,6 +485,8 @@ def main():
         sys.exit(task_reader_eval())
     elif task == "purge-images":
         sys.exit(task_purge_images(extra_args))
+    elif task == "screenshots":
+        sys.exit(task_screenshots())
     else:
         print(f"Unknown task: {task}")
         sys.exit(1)
