@@ -213,8 +213,36 @@ def find_cloudflared() -> Path | None:
     return None
 
 
+def validate_tunnel_passcode(passcode: str | None) -> tuple[bool, str]:
+    """Validate that VAARI_DEMO_PASSCODE is non-empty, not 'change-me', and at least 12 characters."""
+    if not passcode or not passcode.strip():
+        return False, "VAARI_DEMO_PASSCODE is empty. Set a strong passcode (at least 12 characters) in .env before running tunnel."
+    val = passcode.strip()
+    if val == "change-me":
+        return False, "VAARI_DEMO_PASSCODE is still set to 'change-me'. Set a strong passcode (at least 12 characters) in .env before running tunnel."
+    if len(val) < 12:
+        return False, f"VAARI_DEMO_PASSCODE is too short ({len(val)} characters; minimum 12). Set a strong passcode in .env before running tunnel."
+    return True, ""
+
+
 def task_tunnel() -> int:
     """Run cloudflared tunnel to expose port 8000 over HTTPS, or print installation steps."""
+    try:
+        from dotenv import load_dotenv
+        load_dotenv(ROOT / ".env")
+    except ImportError:
+        pass
+
+    passcode = os.environ.get("VAARI_DEMO_PASSCODE", "")
+    valid, err_msg = validate_tunnel_passcode(passcode)
+    if not valid:
+        print("\n" + "=" * 70)
+        print("  Tunnel Refused: Insecure Passcode")
+        print("=" * 70)
+        print(f"  {err_msg}")
+        print("=" * 70 + "\n")
+        return 1
+
     cf = find_cloudflared()
     if not cf:
         print("\n" + "=" * 70)

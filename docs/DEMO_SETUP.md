@@ -28,6 +28,8 @@ This guide walks through bringing up the complete Vaari operations demo from a c
 ---
 
 ### Step 3: Start the Cloudflare HTTPS Tunnel
+> **Passcode Safety Check:** `python tasks.py tunnel` refuses to start if `VAARI_DEMO_PASSCODE` is empty, `change-me`, or shorter than 12 characters. Set a strong passcode in `.env` before starting the tunnel.
+
 1. In a separate terminal window, start the tunnel:
    ```bash
    python tasks.py tunnel
