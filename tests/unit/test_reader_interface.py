@@ -190,3 +190,13 @@ def test_custom_reader_is_not_a_third_party_in_production(monkeypatch):
     assert config_problems(settings) == []
     monkeypatch.setenv("VAARI_CUSTOM_READER_URL", "http://reader.example.org/read")
     assert any("https://" in p for p in config_problems(settings))
+
+
+def test_no_training_data_is_collected_or_stored():
+    """Part 5: the custom-reader plan is documentation only; nothing collects training data yet."""
+    import app.models  # noqa: F401
+    from app.db import Base
+
+    names = {t.name for t in Base.metadata.tables.values()}
+    cols = {c.name for t in Base.metadata.tables.values() for c in t.columns}
+    assert not any("train" in n for n in names | cols)

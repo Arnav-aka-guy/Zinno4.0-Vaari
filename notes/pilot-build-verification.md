@@ -24,3 +24,4 @@ Real output from the test run after each numbered item (summary lines pasted as 
 | R6 strict JSON, per-field confidence | part-5-reader | `python tasks.py test` | `364 passed, 1 warning in 31.55s` |
 | R7a reader pass bar + synthetic set (no eval run yet) | part-5-reader | `python tasks.py test` | `364 passed` (unchanged; docs and generator only) |
 | R7b reader-eval per field, silent errors, READER_EVAL.md | part-5-reader | `python tasks.py test` / `reader-eval` (mock) | `372 passed, 1 warning in 31.44s` / mock: FAIL as expected (phone 0 of 48, silent phone 30 of 48; page1 5 of 6 phone) |
+| R8 FUTURE_CUSTOM_READER.md | part-5-reader | `python tasks.py test` | `373 passed, 1 warning in 30.94s` |
