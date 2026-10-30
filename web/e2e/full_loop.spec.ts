@@ -25,6 +25,9 @@ test('Full Phase 3 End-to-End Scenario (TESTING.md Section 7: Steps 1 to 8)', as
   await expect(page.locator('#intake-privacy-banner')).toContainText(
     'No real register page may go to a hosted model',
   );
+  // Part 5: the banner names the reader in use and where photos go.
+  await expect(page.locator('#intake-reader-name')).toContainText('Reader in use: mock');
+  await expect(page.locator('#intake-reader-destination')).toHaveText('No photo leaves this server.');
 
   const registerFixture = path.resolve(__dirname, '../../tests/fixtures/sample_field.jpg');
   await page.locator('#intake-file-input').setInputFiles(registerFixture);
