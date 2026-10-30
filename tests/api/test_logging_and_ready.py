@@ -46,7 +46,7 @@ def test_good_incoming_request_id_is_kept_bad_one_replaced(client):
 
 def test_access_line_is_json_with_route_template_not_path(client, captured):
     client.get("/api/records/SomeRecordTokenValue123", headers={"X-Request-ID": "req-00000001"})
-    access = [l for l in lines(captured) if l.get("event") == "request"]
+    access = [ln for ln in lines(captured) if ln.get("event") == "request"]
     assert access, captured.getvalue()
     a = access[-1]
     assert a["route"] == "/api/records/{token}"
@@ -100,6 +100,7 @@ def test_redaction_filter_masks_phones_tokens_and_bearer():
     assert redact("tok AbCdEfGhIjKlMnOpQrStUv end") == "tok [token] end"
     assert redact("Authorization: Bearer v1.abc.def") == "Authorization: Bearer [redacted]"
     assert redact("acres 3.2 on 2026-10-30") == "acres 3.2 on 2026-10-30"
+    assert redact("in enforce_startup_checks") == "in enforce_startup_checks"  # 22 chars, not a token
 
 
 def test_unhandled_error_gives_500_shape_and_logs_type_only(client, captured):
@@ -120,7 +121,7 @@ def test_unhandled_error_gives_500_shape_and_logs_type_only(client, captured):
         "details": {"request_id": "boom-0000001"},
     }
     assert r.headers["x-content-type-options"] == "nosniff"
-    err = [l for l in lines(captured) if l.get("event") == "unhandled_error"]
+    err = [ln for ln in lines(captured) if ln.get("event") == "unhandled_error"]
     assert err and err[0]["error_type"] == "RuntimeError" and err[0]["request_id"] == "boom-0000001"
     assert "test_logging_and_ready.py" in err[0]["where"] or "app/" in err[0]["where"]
     assert SECRET_PHONE not in captured.getvalue() and "leaky" not in captured.getvalue()

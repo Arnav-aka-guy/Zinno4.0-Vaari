@@ -1,32 +1,32 @@
 """API routes for register photo intake, stored drafts, and human confirmation (Step 05)."""
 
-from datetime import date, datetime, timedelta, timezone
 import hashlib
-from pathlib import Path
+from datetime import date, datetime, timedelta, timezone
 from typing import Any
+
 from fastapi import APIRouter, Depends, File, UploadFile, status
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from app import clock
-from app.auth import Principal, require_operator, require_staff
+from app.auth import Principal, require_operator
 from app.config import settings
 from app.db import get_db
 from app.enums import ServiceType
 from app.errors import VaariError
 from app.event_log import log_event
-from app.logging_setup import log_event as app_log_event
 from app.evidence.photos import read_image_upload
-from app.storage import get_photo_store
-from app.storage.sanitize import sanitize_image
 from app.intake.prompt import PROMPT_VERSION
 from app.intake.reader import ReaderUnavailable, get_reader
 from app.intake.validate import has_blocking_issues, validate_row
+from app.logging_setup import log_event as app_log_event
 from app.models import IntakePage, RegisterDraft
 from app.routes.common import get_or_create_home_centre
 from app.routes.requests import create_request_record
 from app.scheduler.service import run_for_centre
 from app.schemas import RequestIn
+from app.storage import get_photo_store
+from app.storage.sanitize import sanitize_image
 
 router = APIRouter(prefix="/intake", tags=["intake"])
 
@@ -54,7 +54,8 @@ def get_reader_status_for_health() -> str:
 
     mode = settings.reader.strip().lower()
     if mode == "mock":
-        return "mock"
+        # The mock refuses in production (it would invent rows), so show the fallback.
+        return "down" if settings.is_production else "mock"
     if mode == "hosted":
         if not settings.allow_hosted_reader:
             return "down"
@@ -159,7 +160,7 @@ async def upload_register_photo(
             message="Reader unavailable: type the rows.",
             http_status=503,
             details={"intake_id": page.id},
-        )
+        ) from exc
 
     app_log_event(
         "reader call", event="reader_call", reader=draft_result.reader, ok=True,

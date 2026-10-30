@@ -479,3 +479,11 @@ With `VAARI_ENV=production` the app refuses to start, and lists every problem, w
 - **Request IDs.** Every response has `X-Request-ID`. A well-formed incoming one (8 to 64 of `A-Z a-z 0-9 . _ -`) is kept; anything else is replaced.
 - **Unhandled errors** give 500 `{error_code: "INTERNAL_ERROR", message, details: {request_id}}` (new error code) and log only the exception type and code location, because database errors can quote personal values.
 - **`GET /api/ready`** (public): 200 `{status: "ready", checks: {database, migrations, storage, reader}}` when the database answers, the schema is at head and the data folder is writable; otherwise 503 `NOT_READY` (new error code) with `details.checks`. A reader that is down does not make the server unready, because typing rows is the visible fallback.
+
+### 15.11 Docker deployment (C10)
+
+- `Dockerfile`: two stages (Node 22 builds `web/dist`; Python 3.12 runs it), user `vaari` (uid 10001), `VAARI_ENV=production`, data in `/data` (`VAARI_DB_PATH=/data/vaari.sqlite`, `VAARI_DATA_DIR=/data`, `VAARI_BACKUP_DIR=/data/backups`), `HEALTHCHECK` on `/api/ready`, uvicorn with `--no-access-log --log-config app/uvicorn_logging.json`. Base images can be swapped with `--build-arg PYTHON_IMAGE=... NODE_IMAGE=...`.
+- `docker-compose.yml`: volume `vaari-data:/data`, `env_file: .env`, port bound to `127.0.0.1:8000`, read-only root filesystem, `no-new-privileges`, all capabilities dropped. `.env.production.example` is the starting `.env`.
+- `docs/DEPLOY.md`: fresh clone to running server, accounts, HTTPS, links, backups, restore and upgrades.
+- **Mock reader in production.** `MockRegisterReader` refuses when `VAARI_ENV=production`, because it returns the same invented rows for any photo. Register upload then gives 503 `READER_UNAVAILABLE` and keeps the photo, so staff type the rows beside it. `/api/health` reports `reader: "down"` in that case (an existing enum value).
+- A start-up refusal is logged as one JSON line, `event: "refused_to_start"`, listing every problem.

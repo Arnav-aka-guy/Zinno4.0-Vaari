@@ -14,6 +14,7 @@ All notable changes are recorded here. The format follows Keep a Changelog, and 
 - **B7 Photo storage**: storage interface (local disk; S3 placeholder refused); every image re-encoded with EXIF/GPS stripped; hashes are of the stored file.
 - **B8 Backup and restore**: online SQLite backup plus photos with a SHA-256 manifest; verified restore that keeps the previous data.
 - **C9 Logs and readiness**: JSON logs with request IDs and route templates, PII redaction, safe 500s, `/api/ready`.
+- **C10 Docker**: non-root image, compose with a data volume, production `.env` example, `docs/DEPLOY.md`; mock reader refuses in production.
 
 ### Polish & Hardening Pass (29 Oct 2026)
 - **OpenAPI & Freshness Enforcement**: Regenerated `docs/openapi.json` from live application (`app.openapi()`) with LF line endings containing all 25 API paths (including `/api/intake/*` and `/api/dashboard/usage.csv`), and added an automated drift test `tests/api/test_openapi_freshness.py` that fails if committed schema is out of date.

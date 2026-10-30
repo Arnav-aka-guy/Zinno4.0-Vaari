@@ -29,7 +29,12 @@ request_id_var: contextvars.ContextVar[str | None] = contextvars.ContextVar("vaa
 
 _REQUEST_ID_RE = re.compile(r"^[A-Za-z0-9._-]{8,64}$")
 _PHONE_RE = re.compile(r"(?<!\d)(?:\+?91[\s-]?)?[6-9]\d{4}[\s-]?\d{5}(?!\d)")
-_TOKEN_RE = re.compile(r"(?<![A-Za-z0-9_-])[A-Za-z0-9_-]{22}(?![A-Za-z0-9_-])")  # secrets.token_urlsafe(16)
+# secrets.token_urlsafe(16): 22 base64url characters. Requiring a small letter plus a capital or
+# a digit keeps ordinary snake_case identifiers (enforce_startup_checks) readable.
+_TOKEN_RE = re.compile(
+    r"(?<![A-Za-z0-9_-])(?=[A-Za-z0-9_-]{0,21}[a-z])(?=[A-Za-z0-9_-]{0,21}[A-Z0-9])"
+    r"[A-Za-z0-9_-]{22}(?![A-Za-z0-9_-])"
+)
 _BEARER_RE = re.compile(r"(?i)bearer\s+\S+")
 
 # Extra fields a log call may attach (logger.info("...", extra={"fields": {...}})).

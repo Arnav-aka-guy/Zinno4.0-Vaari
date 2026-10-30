@@ -1,20 +1,24 @@
 """Main FastAPI application for Vaari."""
 
+import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
+
 from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.routing import Match, Route
 
+import app.models  # ensure models are registered
 from app.config import settings
 from app.db import get_engine, get_session_factory
-from app.migrate import ensure_schema
 from app.errors import setup_error_handlers
-import app.models  # ensure models are registered
-from app.routes.common import get_or_create_home_centre
+from app.logging_setup import RequestContextMiddleware, configure_logging, log_event
+from app.migrate import ensure_schema
+from app.ratelimit import RateLimitMiddleware
 from app.routes.auth import router as auth_router
+from app.routes.common import get_or_create_home_centre
 from app.routes.dashboard import router as dashboard_router
 from app.routes.driver import router as driver_router
 from app.routes.health import router as health_router
@@ -25,16 +29,19 @@ from app.routes.records import router as records_router
 from app.routes.requests import router as requests_router
 from app.routes.schedule import router as schedule_router
 from app.routes.slots import router as slots_router
-from app.logging_setup import RequestContextMiddleware, configure_logging, log_event
-from app.ratelimit import RateLimitMiddleware
 from app.security_headers import ConfiguredCORSMiddleware, SecurityHeadersMiddleware
-from app.startup_checks import enforce_startup_checks
+from app.startup_checks import UnsafeConfigError, enforce_startup_checks
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     configure_logging()
-    enforce_startup_checks(settings)
+    try:
+        enforce_startup_checks(settings)
+    except UnsafeConfigError as exc:
+        # One clear line for whoever reads the container logs, before uvicorn prints the traceback.
+        logging.getLogger("vaari").error(str(exc), extra={"fields": {"event": "refused_to_start"}})
+        raise
     revision = ensure_schema(get_engine())
     log_event("startup", event="startup", env=settings.env, auth=settings.auth_mode, reader=settings.reader, revision=revision)
     session_factory = get_session_factory()

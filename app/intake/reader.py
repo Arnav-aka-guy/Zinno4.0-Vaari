@@ -1,10 +1,11 @@
 """RegisterReader interface, MockRegisterReader, and reader factory (Step 02)."""
 
+import json
 from dataclasses import dataclass, field
 from datetime import date
-import json
 from pathlib import Path
 from typing import Any, Protocol
+
 from app.intake.validate import FAILING_CONFIDENCE_CAP, validate_row
 
 
@@ -58,6 +59,13 @@ class MockRegisterReader:
         self.today_override = today_override
 
     def read(self, image: bytes, media_type: str = "image/jpeg") -> RegisterDraft:
+        from app.config import settings as app_settings
+
+        if app_settings.is_production:
+            # The mock returns the same invented rows for any photo. In production that would
+            # put fictional farmers on the confirmation screen, so it refuses and staff type the rows.
+            raise ReaderUnavailable("The mock reader is switched off in production. Type the rows from the photo.")
+
         if not image or len(image) == 0:
             raise ReaderUnavailable("Uploaded register image is empty.")
 

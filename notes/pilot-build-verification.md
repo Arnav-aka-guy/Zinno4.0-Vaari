@@ -14,3 +14,4 @@ Real output from the test run after each numbered item (summary lines pasted as 
 | B7 photo storage and EXIF stripping | part-b-data | `python tasks.py test` / `e2e` | `235 passed, 1 warning in 27.04s` / development `6 passed (20.9s)`, production `2 passed (3.5s)` |
 | B8 backup and restore | part-b-data | `python tasks.py test` | `245 passed, 1 warning in 28.13s` |
 | C9 JSON logs, request IDs, /api/ready | part-c-ops | `python tasks.py test` / `e2e` | `254 passed, 1 warning in 28.63s` / development `6 passed (21.2s)`, production `2 passed (3.5s)` |
+| C10 Docker deployment | part-c-ops | `python tasks.py test` + manual Docker run of DEPLOY.md steps 3-8 | `261 passed, 1 warning in 29.58s`; container `healthy`, `/api/ready` 200, uid 10001, restore round trip OK, refused with default secret |
