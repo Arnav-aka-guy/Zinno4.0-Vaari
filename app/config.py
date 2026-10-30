@@ -9,7 +9,27 @@ ROOT_DIR = Path(__file__).parent.parent.resolve()
 load_dotenv(ROOT_DIR / ".env")
 
 
+VALID_ENVS = ("development", "production")
+
+
 class Settings:
+    @property
+    def env(self) -> str:
+        """VAARI_ENV: 'development' (default) or 'production'."""
+        return os.environ.get("VAARI_ENV", "development").strip().lower() or "development"
+
+    @property
+    def is_production(self) -> bool:
+        return self.env == "production"
+
+    @property
+    def allow_hosted_reader_in_production(self) -> bool:
+        """Explicit override needed before the hosted reader may run in production."""
+        return os.environ.get("VAARI_ALLOW_HOSTED_READER_IN_PRODUCTION", "false").strip().lower() in (
+            "true",
+            "1",
+        )
+
     @property
     def demo_passcode(self) -> str:
         return os.environ.get("VAARI_DEMO_PASSCODE", "change-me")

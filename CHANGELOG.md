@@ -4,6 +4,9 @@ All notable changes are recorded here. The format follows Keep a Changelog, and 
 
 ## [Unreleased]
 
+### Pilot build v0.2 (30 Oct 2026)
+- **A1 Production mode**: `VAARI_ENV=production` refuses to start with unsafe settings; new `python tasks.py check-config`.
+
 ### Polish & Hardening Pass (29 Oct 2026)
 - **OpenAPI & Freshness Enforcement**: Regenerated `docs/openapi.json` from live application (`app.openapi()`) with LF line endings containing all 25 API paths (including `/api/intake/*` and `/api/dashboard/usage.csv`), and added an automated drift test `tests/api/test_openapi_freshness.py` that fails if committed schema is out of date.
 - **Handoff Links & Dependencies**: Updated `HANDOFF.md` to replace absolute `file:///` URLs with repo-relative paths, and documented `shapely` and `pyproj` additions for geodesic polygon and coordinate transformations.

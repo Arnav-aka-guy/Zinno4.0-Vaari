@@ -381,3 +381,23 @@ All seeded data is fictional and every seeded request carries the `seeded reques
 | 3 | Antigravity | Intake (reader, routes, confirmation screen), polygons and position checks, evidence flags, fallback tests, full end-to-end, demo readiness, then Tier 2 if time allows | — |
 
 Each phase ends by writing its section of `HANDOFF.md`, running every test, and pushing a git tag: `phase-1-done`, `phase-2-done`, `phase-3-done`.
+
+## 15. Pilot hardening (v0.2): additive changes
+
+This section records every change made for the one-centre pilot. Each one is additive unless it says otherwise, and each is also listed in `HANDOFF.md` under "Pilot build (v0.2) / Contract changes".
+
+### 15.1 Configuration added
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `VAARI_ENV` | `development` | `development` or `production`. Production refuses to start with unsafe settings (see 15.2) |
+| `VAARI_ALLOW_HOSTED_READER_IN_PRODUCTION` | `false` | Explicit override. Without it, production refuses to start while any hosted reader is enabled |
+
+### 15.2 Production start-up checks
+
+With `VAARI_ENV=production` the app refuses to start, and lists every problem, when:
+
+- `VAARI_DEMO_PASSCODE` is empty, a default value (`change-me` and similar), or shorter than 16 characters;
+- a hosted reader is enabled (`VAARI_READER` other than `mock`, or `VAARI_ALLOW_HOSTED_READER=true`) and `VAARI_ALLOW_HOSTED_READER_IN_PRODUCTION` is not `true`.
+
+`python tasks.py check-config` prints the same list without starting the server. Any other `VAARI_ENV` value is refused in every mode.

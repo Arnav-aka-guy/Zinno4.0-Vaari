@@ -8,6 +8,7 @@ from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.routing import Match, Route
 
+from app.config import settings
 from app.db import Base, get_engine, get_session_factory
 from app.errors import setup_error_handlers
 import app.models  # ensure models are registered
@@ -22,10 +23,12 @@ from app.routes.records import router as records_router
 from app.routes.requests import router as requests_router
 from app.routes.schedule import router as schedule_router
 from app.routes.slots import router as slots_router
+from app.startup_checks import enforce_startup_checks
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    enforce_startup_checks(settings)
     Base.metadata.create_all(bind=get_engine())
     session_factory = get_session_factory()
     with session_factory() as session:

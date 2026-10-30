@@ -210,3 +210,23 @@ python tasks.py serve
 ### Reader evaluation counts & model confidence note
 - From `examples/register_pages/EVAL.md` (page1 against MockRegisterReader, prompt v1): 6 total rows, 4 rows usable without edits, 1 wrong phone, 1 wrong acres, 0 wrong dates/services/villages/names, 0.05s per page.
 - **Important note on confidence:** Vision model confidence scores (0.0 to 1.0) are the model's own self-reported estimates and are not statistically calibrated probabilities. Failing validation cells are deterministically capped at 0.3.
+
+
+---
+
+## Pilot build (v0.2): one hiring centre
+
+Built from the "status and build brief for the backend work", on branches `part-a-security`, `part-b-data`, `part-c-ops`, `part-5-reader`, `part-6-satellite-docs`, one commit per numbered item. Nothing was pushed.
+
+### What changed (each item with the test that proves it)
+- **A1 Production mode.** `VAARI_ENV=production` refuses to start with an empty, default or short (<16) passcode, or with a hosted reader enabled without `VAARI_ALLOW_HOSTED_READER_IN_PRODUCTION=true`. All problems are listed at once. `python tasks.py check-config` prints them (`tests/unit/test_production_mode.py`).
+
+### Contract changes (additive only, with the reason)
+- New settings `VAARI_ENV`, `VAARI_ALLOW_HOSTED_READER_IN_PRODUCTION` (A1). See `docs/CONTRACT.md` §15.
+
+### Libraries added beyond the contract, and why
+- (none yet)
+
+### What was cut
+
+### What was not verified

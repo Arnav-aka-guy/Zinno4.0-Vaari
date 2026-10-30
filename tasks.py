@@ -286,6 +286,23 @@ def task_tunnel() -> int:
         return 0
 
 
+def task_check_config() -> int:
+    """Print every unsafe setting for the current VAARI_ENV and exit non-zero if any."""
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    from app.config import settings
+    from app.startup_checks import config_problems
+
+    problems = config_problems(settings)
+    if problems:
+        print(f"Unsafe settings for VAARI_ENV={settings.env}:")
+        for p in problems:
+            print(f"  - {p}")
+        return 1
+    print(f"Settings are safe for VAARI_ENV={settings.env}.")
+    return 0
+
+
 def task_seed() -> int:
     """Load seed data into an existing database."""
     py = get_venv_python()
@@ -454,7 +471,7 @@ def main():
         print("Usage: python tasks.py <task> [args]")
         print(
             "Available tasks: setup, dev, test, seed, reset, smoke, serve, tunnel, "
-            "build-web, e2e, reader-eval, purge-images, screenshots"
+            "build-web, e2e, reader-eval, purge-images, screenshots, check-config"
         )
         sys.exit(1)
 
@@ -485,6 +502,8 @@ def main():
         sys.exit(task_reader_eval())
     elif task == "purge-images":
         sys.exit(task_purge_images(extra_args))
+    elif task == "check-config":
+        sys.exit(task_check_config())
     elif task == "screenshots":
         sys.exit(task_screenshots())
     else:
