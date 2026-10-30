@@ -26,3 +26,4 @@ Real output from the test run after each numbered item (summary lines pasted as 
 | R7b reader-eval per field, silent errors, READER_EVAL.md | part-5-reader | `python tasks.py test` / `reader-eval` (mock) | `372 passed, 1 warning in 31.44s` / mock: FAIL as expected (phone 0 of 48, silent phone 30 of 48; page1 5 of 6 phone) |
 | R8 FUTURE_CUSTOM_READER.md | part-5-reader | `python tasks.py test` | `373 passed, 1 warning in 30.94s` |
 | S1 FUTURE_SATELLITE.md | part-6-satellite-docs | `python tasks.py test` | `373 passed` (docs only) |
+| S2 README/ROADMAP/ARCHITECTURE satellite status | part-6-satellite-docs | `python tasks.py test` | `376 passed, 1 warning in 30.89s` |

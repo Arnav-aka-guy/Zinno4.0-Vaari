@@ -132,7 +132,7 @@ Every component is labelled by its honest status in v0.1.
 | **Access control** (`app/auth.py`) | Demo only | Shared passcode for operator and officer routes; unguessable 128-bit link tokens for driver and record URLs |
 | **Demo data** (`app/seed/`) | Fictional | 40 requests generated relative to today's date, each badged `seeded request` |
 | **Tier 2 extras** | Built | Usage CSV export, an offline-safe map panel, and rescue options (nearest compatible centres) on will-miss requests |
-| **Satellite sensing, GPX coverage trace** | Not built | Cut to keep the demo fully deterministic. `/api/health` reports `satellite: "disabled"` |
+| **Satellite sensing, GPX coverage trace** | Satellite: future (v0.7), not built | No satellite code exists. `/api/health` reports `satellite: "disabled"`. Design: [docs/FUTURE_SATELLITE.md](docs/FUTURE_SATELLITE.md) |
 
 ### What the demo proves, and what it does not
 
@@ -169,7 +169,7 @@ Every unreliable dependency sits behind an interface with a mock, so each part c
 | Scheduler | Greedy deadline-first | Routing solver | The greedy scheduler is the default |
 | Notifier | On-screen panel, `wa.me` link | WhatsApp Business | The on-screen panel always renders |
 | Position check | shapely + pyproj geometry | | The job closes, badged "position self-reported" |
-| Harvest sensor | Disabled | Sentinel-2 reader | Not needed by the core loop |
+| Harvest sensor | Satellite: future (v0.7), not built | `HarvestSensor` (Sentinel-2 / Sentinel-1), see [docs/FUTURE_SATELLITE.md](docs/FUTURE_SATELLITE.md) | Not needed by the core loop |
 
 ### Fallback behaviour
 
@@ -274,7 +274,7 @@ The simplest option is one service: build with `pip install -r requirements.txt 
 - The demo passcode is not security. Authentication, roles, rate limits and upload scanning must arrive before any pilot.
 - Handwritten Gurmukhi is hard for vision models. The name field is optional because the phone number is the key.
 - The register reader was evaluated against the mock reader in the repository. Run `python tasks.py reader-eval` with your own synthetic pages to measure the hosted reader.
-- Harvest sensing from satellite imagery is not built and not validated on Punjab paddy.
+- Satellite harvest sensing is future (v0.7), not built, and not validated on Punjab paddy. It may only ever suggest a window; a person's date always wins.
 - Vaari does not change the economics: not burning costs a farmer roughly Rs. 2,000 an acre.
 
 ## Responsible use
@@ -286,7 +286,7 @@ The simplest option is one service: build with `pip install -r requirements.txt 
 
 ## Roadmap
 
-`v0.1` MVP (this release) → `v0.2` pilot hardening → `v0.3` offline and mobile → `v0.4` scheduling optimisation → `v0.5` messaging → `v0.6` security and privacy → `v0.7` satellite intelligence → `v1.0` pilot production. Details: [docs/ROADMAP.md](docs/ROADMAP.md).
+`v0.1` MVP (this release) → `v0.2` pilot hardening → `v0.3` offline and mobile → `v0.4` scheduling optimisation → `v0.5` messaging → `v0.6` security and privacy → `v0.7` satellite intelligence (future, not built) → `v1.0` pilot production. Details: [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Engineering highlights
 
