@@ -6,6 +6,7 @@ from datetime import date
 import pytest
 
 from app.intake.hosted import HostedVisionReader
+from app.intake.prompt import PROMPT_VERSION
 from app.intake.reader import ReaderUnavailable
 
 TODAY = date(2026, 10, 25)
@@ -77,7 +78,7 @@ def test_hosted_reader_retries_once_on_bad_json_and_succeeds():
     assert len(calls) == 2
     assert "Return ONLY valid JSON" in calls[1]
     assert draft.reader == "hosted"
-    assert draft.prompt_version == "v1"
+    assert draft.prompt_version == PROMPT_VERSION == "v2"  # v2: strict schema with confidence per field
     assert len(draft.rows) == 1
     assert draft.rows[0].fields["service_type"] == "super_seeder"
     assert draft.rows[0].fields["harvest_date"] == "2026-10-25"

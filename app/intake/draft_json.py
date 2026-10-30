@@ -16,9 +16,22 @@ from typing import Any
 from app.intake.reader import CORE_FIELDS, RegisterDraft, RowDraft
 from app.intake.validate import FAILING_CONFIDENCE_CAP, validate_row
 
+ALLOWED_FIELDS = (*CORE_FIELDS, "note")
+
+
+def _is_number(v: Any) -> bool:
+    return isinstance(v, (int, float)) and not isinstance(v, bool)
+
 
 def parse_rows(raw_text: str) -> list[dict[str, Any]]:
-    """Parse JSON text and check it has a 'rows' list of objects with 'fields'. Raises ValueError."""
+    """Parse the reader's answer and enforce the strict schema. Raises ValueError with the first problem.
+
+    Strict means: a top-level object with a ``rows`` list; each row an object with
+    ``row`` (a positive integer), ``fields`` (only the known keys, each a string,
+    a number or null) and ``confidence`` (a number from 0 to 1 for **every** one of
+    phone, name, village, acres, service_type and harvest_date, blank cells
+    included). Anything else is refused, and the hosted reader retries once.
+    """
     if not raw_text or not isinstance(raw_text, str):
         raise ValueError("Empty response from the reader.")
     cleaned = raw_text.strip()
@@ -31,9 +44,27 @@ def parse_rows(raw_text: str) -> list[dict[str, Any]]:
         raise ValueError("JSON does not match schema: missing 'rows' list.")
 
     rows = data["rows"]
-    for item in rows:
+    seen: set[int] = set()
+    for n, item in enumerate(rows, start=1):
         if not isinstance(item, dict) or "fields" not in item or not isinstance(item["fields"], dict):
             raise ValueError("Each row in 'rows' must be an object containing 'fields'.")
+        row_no = item.get("row", n)
+        if not isinstance(row_no, int) or isinstance(row_no, bool) or row_no < 1 or row_no in seen:
+            raise ValueError(f"Row {n}: 'row' must be a positive whole number, used once.")
+        seen.add(row_no)
+        extra = set(item["fields"]) - set(ALLOWED_FIELDS)
+        if extra:
+            raise ValueError(f"Row {row_no}: unknown fields {sorted(extra)}.")
+        for k, v in item["fields"].items():
+            if v is not None and not isinstance(v, str) and not _is_number(v):
+                raise ValueError(f"Row {row_no}: field '{k}' must be text, a number or null.")
+        conf = item.get("confidence")
+        if not isinstance(conf, dict):
+            raise ValueError(f"Row {row_no}: 'confidence' object is missing.")
+        for k in CORE_FIELDS:
+            v = conf.get(k)
+            if not _is_number(v) or not 0.0 <= float(v) <= 1.0:
+                raise ValueError(f"Row {row_no}: confidence for '{k}' must be a number from 0 to 1.")
     return rows
 
 

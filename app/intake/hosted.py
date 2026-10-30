@@ -23,6 +23,7 @@ from app.intake.draft_json import build_draft, parse_rows
 from app.intake.prompt import (
     PROMPT_VERSION,
     REGISTER_EXTRACTION_PROMPT,
+    RESPONSE_SCHEMA,
     RETRY_JSON_MESSAGE,
 )
 from app.intake.reader import ReaderInfo, ReaderUnavailable, RegisterDraft
@@ -142,7 +143,11 @@ class HostedVisionReader:
                     ]
                 }
             ],
-            "generationConfig": {"temperature": 0.1, "responseMimeType": "application/json"},
+            "generationConfig": {
+                "temperature": 0.1,
+                "responseMimeType": "application/json",
+                "responseSchema": RESPONSE_SCHEMA,
+            },
         }
         with httpx.Client(timeout=timeout_s) as http_client:
             resp = http_client.post(
