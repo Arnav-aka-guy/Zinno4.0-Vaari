@@ -33,6 +33,8 @@ class SlidingWindow:
             q = self._hits.setdefault((bucket, key), deque())
             while q and q[0] <= now - window_s:
                 q.popleft()
+            if limit <= 0:
+                return window_s
             if len(q) >= limit:
                 return max(0.0, q[0] + window_s - now)
             q.append(now)

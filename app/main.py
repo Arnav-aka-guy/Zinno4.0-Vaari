@@ -25,6 +25,7 @@ from app.routes.requests import router as requests_router
 from app.routes.schedule import router as schedule_router
 from app.routes.slots import router as slots_router
 from app.ratelimit import RateLimitMiddleware
+from app.security_headers import ConfiguredCORSMiddleware, SecurityHeadersMiddleware
 from app.startup_checks import enforce_startup_checks
 
 
@@ -43,6 +44,10 @@ app = FastAPI(title="Vaari Backend", version="0.1", lifespan=lifespan)
 
 setup_error_handlers(app)
 app.add_middleware(RateLimitMiddleware)
+# Cross-origin calls only from VAARI_CORS_ORIGINS. Same-origin use (the normal case) needs none.
+app.add_middleware(ConfiguredCORSMiddleware)
+# Added last so it wraps everything, including rate-limit and CORS responses.
+app.add_middleware(SecurityHeadersMiddleware)
 
 app.include_router(health_router, prefix="/api")
 app.include_router(auth_router, prefix="/api")

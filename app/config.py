@@ -79,6 +79,12 @@ class Settings:
         return float(os.environ.get("VAARI_RECORD_LINK_DAYS", "365"))
 
     @property
+    def cors_origins(self) -> list[str]:
+        """Exact origins allowed to call the API from another site. Empty = same origin only."""
+        raw = os.environ.get("VAARI_CORS_ORIGINS", "").strip()
+        return [o.strip().rstrip("/") for o in raw.split(",") if o.strip()]
+
+    @property
     def demo_passcode(self) -> str:
         return os.environ.get("VAARI_DEMO_PASSCODE", "change-me")
 

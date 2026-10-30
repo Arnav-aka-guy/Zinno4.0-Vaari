@@ -6,6 +6,11 @@ test.skip(process.env.VAARI_E2E_MODE === 'production', 'development-mode pass on
 
 test('Driver link: turn off shows a plain message, New link brings it back', async ({ page, request }) => {
   page.on('dialog', d => d.accept());
+  // A5: the Content-Security-Policy must not block anything the app itself loads.
+  const cspViolations: string[] = [];
+  page.on('console', msg => {
+    if (/Content Security Policy|Refused to/i.test(msg.text())) cspViolations.push(msg.text());
+  });
   await page.goto('/desk');
   await expect(page.locator('#desk-page')).toBeVisible({ timeout: 15000 });
   await page.locator('#tab-machines').click();
@@ -26,4 +31,5 @@ test('Driver link: turn off shows a plain message, New link brings it back', asy
   await expect(page.locator('#driver-link-state-3')).toContainText('link active');
   const newPath = await page.locator('#machine-card-3 .driver-url-input').inputValue();
   expect(newPath).not.toBe(oldPath);
+  expect(cspViolations).toEqual([]);
 });

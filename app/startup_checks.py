@@ -50,6 +50,13 @@ def config_problems(s: Any) -> list[str]:
             f"VAARI_SECRET_KEY is {len(secret)} characters; production needs at least {MIN_SECRET_LEN}."
         )
 
+    for origin in getattr(s, "cors_origins", []) or []:
+        if origin == "*" or "*" in origin:
+            problems.append("VAARI_CORS_ORIGINS may not contain '*' in production. List exact origins.")
+            break
+        if not origin.startswith("https://"):
+            problems.append(f"VAARI_CORS_ORIGINS entry '{origin}' must start with https:// in production.")
+
     if _hosted_reader_requested(s) and not getattr(s, "allow_hosted_reader_in_production", False):
         problems.append(
             "The hosted register reader is enabled (VAARI_READER or VAARI_ALLOW_HOSTED_READER). "

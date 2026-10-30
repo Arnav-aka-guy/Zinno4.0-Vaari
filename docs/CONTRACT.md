@@ -400,6 +400,7 @@ This section records every change made for the one-centre pilot. Each one is add
 | `VAARI_UPLOAD_RATE_PER_MIN` | `30` | Photo uploads (`register-photo`, slot `start`, slot `done`) per client address per minute |
 | `VAARI_DRIVER_LINK_DAYS` | `30` | Lifetime of a new driver link (machine token) |
 | `VAARI_RECORD_LINK_DAYS` | `365` | Lifetime of a new service-record link |
+| `VAARI_CORS_ORIGINS` | empty | Exact origins allowed to call the API cross-origin. Empty = no CORS headers at all. Production refuses `*` and non-`https://` entries |
 | `VAARI_TRUST_PROXY` | `false` | Take the client address from the first `X-Forwarded-For` value. Turn on only behind your own reverse proxy |
 
 ### 15.2 Production start-up checks
@@ -445,3 +446,8 @@ With `VAARI_ENV=production` the app refuses to start, and lists every problem, w
 - **New routes (operator).** `POST /api/machines/{id}/link/rotate` → `MachineOut` with a new token and expiry; the old link and every slot token it handed out for `scheduled` or `in_progress` slots stop working. `POST /api/machines/{id}/link/revoke` → `MachineOut`, link off now. `POST /api/slots/{id}/record/revoke` and `POST /api/slots/{id}/record/reissue` → `{slot_id, record_token, record_url, status, expires_at}`. Turning off or reissuing a record link never changes the record or its hash (the token is not hashed).
 - **MachineOut** adds `driver_link_status` (`active` | `expired` | `revoked`) and `driver_link_expires_at`.
 - **event_log.** `driver_link_rotated`, `driver_link_revoked`, `link_revoked`, `link_reissued`.
+
+### 15.6 CORS and security headers (A5)
+
+- **CORS.** Off unless `VAARI_CORS_ORIGINS` lists origins; then only those exact origins get `Access-Control-Allow-Origin`, without credentials (sessions use the `Authorization` header). Preflights from other origins get 400. Section 13's "one origin, so no CORS" stays the normal set-up.
+- **Headers on every response.** `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer` (driver and record tokens are in URLs), `Permissions-Policy: camera=(self), geolocation=(self), microphone=(), payment=(), usb=()`, `Cross-Origin-Opener-Policy: same-origin`, `Cross-Origin-Resource-Policy: same-origin`, and `Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://tile.openstreetmap.org; connect-src 'self'; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'`. `/api` responses add `Cache-Control: no-store`. Production adds `Strict-Transport-Security: max-age=31536000; includeSubDomains`.
