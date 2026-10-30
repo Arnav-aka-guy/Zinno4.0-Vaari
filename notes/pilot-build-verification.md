@@ -20,3 +20,4 @@ Real output from the test run after each numbered item (summary lines pasted as 
 | R2 reader start-up probe in /api/health | part-5-reader | `python tasks.py test` | `283 passed, 1 warning in 31.04s` |
 | R3 intake reader banner | part-5-reader | `python tasks.py test` / `e2e` | `284 passed, 1 warning in 32.16s` / development `8 passed (22.6s)`, production `2 passed (3.7s)` |
 | R4 image preprocessing | part-5-reader | `python tasks.py test` / `e2e` | `296 passed, 1 warning in 30.02s` / development `8 passed (22.6s)`, production `2 passed (3.6s)` |
+| R5 Gurmukhi digits and mixed entries | part-5-reader | `python tasks.py test` | `351 passed, 1 warning in 31.02s` |

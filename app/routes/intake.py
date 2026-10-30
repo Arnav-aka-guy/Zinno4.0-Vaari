@@ -19,7 +19,7 @@ from app.evidence.photos import read_image_upload
 from app.intake.preprocess import VALID_TURNS, preprocess_for_reader, rotate_clockwise
 from app.intake.prompt import PROMPT_VERSION
 from app.intake.reader import ReaderUnavailable, get_reader, reader_name
-from app.intake.validate import has_blocking_issues, validate_row
+from app.intake.validate import has_blocking_issues, is_warning, validate_row
 from app.logging_setup import log_event as app_log_event
 from app.models import IntakePage, RegisterDraft
 from app.routes.common import get_or_create_home_centre
@@ -333,9 +333,7 @@ def confirm_intake(
             row_issues.append("consent_service: farmer service consent is required")
 
         if has_blocking_issues(row_issues):
-            blocking = [
-                iss for iss in row_issues if iss != "acres: unusually large, check the register"
-            ]
+            blocking = [iss for iss in row_issues if not is_warning(iss)]
             first_issue = blocking[0] if blocking else row_issues[0]
             failing_field = first_issue.split(":")[0].strip() if ":" in first_issue else "row"
             errors.append(

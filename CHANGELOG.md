@@ -20,6 +20,7 @@ All notable changes are recorded here. The format follows Keep a Changelog, and 
 - **R2 Reader probe**: synthetic start-up probe of a remote reader; provider, model and latency in `/api/health`.
 - **R3 Intake banner**: always names the reader in use and says when photos go to a third party.
 - **R4 Preprocessing**: rotation (EXIF and an operator turn), resize to 1000-2000 px, greyscale contrast stretch before any reader.
+- **R5 Gurmukhi and mixed entries**: Gurmukhi digits, phone labels and prefixes, acre/killa/kanal units and fractions, mixed-script service names, Punjabi and English month names.
 
 ### Polish & Hardening Pass (29 Oct 2026)
 - **OpenAPI & Freshness Enforcement**: Regenerated `docs/openapi.json` from live application (`app.openapi()`) with LF line endings containing all 25 API paths (including `/api/intake/*` and `/api/dashboard/usage.csv`), and added an automated drift test `tests/api/test_openapi_freshness.py` that fails if committed schema is out of date.
