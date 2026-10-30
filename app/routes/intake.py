@@ -15,6 +15,7 @@ from app.db import get_db
 from app.enums import ServiceType
 from app.errors import VaariError
 from app.event_log import log_event
+from app.logging_setup import log_event as app_log_event
 from app.evidence.photos import read_image_upload
 from app.storage import get_photo_store
 from app.storage.sanitize import sanitize_image
@@ -141,6 +142,7 @@ async def upload_register_photo(
         clear_reader_failure()
     except (ReaderUnavailable, Exception) as exc:
         record_reader_failure()
+        app_log_event("reader call", event="reader_call", reader=settings.reader, ok=False, error_type=type(exc).__name__)
         page.status = "failed"
         page.error = str(exc)
         log_event(
@@ -159,6 +161,10 @@ async def upload_register_photo(
             details={"intake_id": page.id},
         )
 
+    app_log_event(
+        "reader call", event="reader_call", reader=draft_result.reader, ok=True,
+        latency_ms=draft_result.latency_ms, rows=len(draft_result.rows),
+    )
     page.reader = draft_result.reader
     page.prompt_version = draft_result.prompt_version
     page.latency_ms = draft_result.latency_ms

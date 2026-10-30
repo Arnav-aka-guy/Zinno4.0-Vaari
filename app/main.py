@@ -25,6 +25,7 @@ from app.routes.records import router as records_router
 from app.routes.requests import router as requests_router
 from app.routes.schedule import router as schedule_router
 from app.routes.slots import router as slots_router
+from app.logging_setup import RequestContextMiddleware, configure_logging, log_event
 from app.ratelimit import RateLimitMiddleware
 from app.security_headers import ConfiguredCORSMiddleware, SecurityHeadersMiddleware
 from app.startup_checks import enforce_startup_checks
@@ -32,8 +33,10 @@ from app.startup_checks import enforce_startup_checks
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    configure_logging()
     enforce_startup_checks(settings)
-    ensure_schema(get_engine())
+    revision = ensure_schema(get_engine())
+    log_event("startup", event="startup", env=settings.env, auth=settings.auth_mode, reader=settings.reader, revision=revision)
     session_factory = get_session_factory()
     with session_factory() as session:
         get_or_create_home_centre(session)
@@ -47,7 +50,9 @@ setup_error_handlers(app)
 app.add_middleware(RateLimitMiddleware)
 # Cross-origin calls only from VAARI_CORS_ORIGINS. Same-origin use (the normal case) needs none.
 app.add_middleware(ConfiguredCORSMiddleware)
-# Added last so it wraps everything, including rate-limit and CORS responses.
+# Request IDs, access logs and the last-resort 500 handler wrap everything below.
+app.add_middleware(RequestContextMiddleware)
+# Added last so it wraps everything, including rate-limit, CORS and 500 responses.
 app.add_middleware(SecurityHeadersMiddleware)
 
 app.include_router(health_router, prefix="/api")

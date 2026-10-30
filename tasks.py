@@ -183,7 +183,7 @@ def task_serve() -> int:
     sys.stdout.flush()
 
     py = get_venv_python()
-    return run_cmd([str(py), "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"])
+    return run_cmd([str(py), "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--no-access-log", "--log-config", "app/uvicorn_logging.json"])
 
 
 def find_cloudflared() -> Path | None:
@@ -530,7 +530,7 @@ def _run_e2e_pass(mode: str, spec_args: list[str]) -> int:
 
         print(f"[{mode}] Starting test server on http://127.0.0.1:{port}...")
         server_proc = subprocess.Popen(
-            [str(py), "-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", str(port)],
+            [str(py), "-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", str(port), "--no-access-log"],
             cwd=ROOT,
             env=env,
             stdout=subprocess.DEVNULL,

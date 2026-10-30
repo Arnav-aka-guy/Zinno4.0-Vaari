@@ -227,6 +227,7 @@ Built from the "status and build brief for the backend work", on branches `part-
 - **B6 Alembic migrations.** Baseline `0001` is exactly v0.1.0's schema; `0002` adds Part A's changes. Start-up runs `upgrade head` instead of `create_all`; an older create_all database is stamped and upgraded with its data kept. A test asserts a fresh migration matches the models, and every test database is now built by the migrations. `reset`/`seed` refuse in production without `--yes-delete-everything` (`tests/unit/test_migrations.py`).
 - **B7 Photo storage and EXIF stripping.** All photo files go through `app/storage` (`LocalDiskStore` now; an S3-compatible store is a refused placeholder). Every upload is re-encoded as a clean JPEG with orientation applied and all metadata, including GPS, removed; decompression bombs and undecodable files get 422 (`tests/unit/test_photo_storage.py`).
 - **B8 Backup and restore.** `python tasks.py backup` uses SQLite's online backup (tested while another connection holds a read transaction and with writes only in the WAL), copies photos and writes a SHA-256 manifest; `restore` verifies everything first, keeps the previous data aside, and upgrades older backups. Tested: restore after deleting data, restore into an empty place, damaged/missing/extra files refused with nothing changed, older-schema restore, pruning, and the two commands (`tests/unit/test_backup.py`).
+- **C9 Structured logs and readiness.** JSON lines with request IDs, route templates instead of paths, a redaction filter, uvicorn access log off, safe 500 handler, and `GET /api/ready`. A test runs a full job (name, phone, photos, record, message, register page) and asserts none of the name, phone, tokens, village, passcode or image bytes appear in any log line (`tests/api/test_logging_and_ready.py`).
 
 ### Contract changes (additive only, with the reason)
 - New settings `VAARI_ENV`, `VAARI_ALLOW_HOSTED_READER_IN_PRODUCTION` (A1). See `docs/CONTRACT.md` §15.
@@ -234,6 +235,7 @@ Built from the "status and build brief for the backend work", on branches `part-
 - A3: error code `RATE_LIMITED` (429, `Retry-After`); settings `VAARI_LOGIN_RATE_PER_MIN`, `VAARI_LOGIN_LOCKOUT_FAILURES`, `VAARI_LOGIN_LOCKOUT_MINUTES`, `VAARI_UPLOAD_RATE_PER_MIN`, `VAARI_TRUST_PROXY`.
 - A4: columns `machine.link_expires_at`, `machine.link_revoked_at`, `service_record.token_expires_at`, `service_record.token_revoked_at`; error `LINK_EXPIRED` (410); routes `POST /api/machines/{id}/link/rotate|revoke`, `POST /api/slots/{id}/record/revoke|reissue`; `MachineOut.driver_link_status`, `MachineOut.driver_link_expires_at`; settings `VAARI_DRIVER_LINK_DAYS`, `VAARI_RECORD_LINK_DAYS`. A database made by v0.1.0 lacks the new columns: until B6 (migrations) it needs `python tasks.py reset`; from B6 on `alembic upgrade` adds them.
 - B7 (**not additive, requested by the brief**): photo and register-page SHA-256 and size are now of the stored, metadata-free JPEG instead of the raw upload; stored files are always `.jpg`; setting `VAARI_PHOTO_STORE`. Records made before B7 still verify, because their hashes were computed from what was stored then.
+- C9: route `GET /api/ready`; error codes `INTERNAL_ERROR` (500) and `NOT_READY` (503); `X-Request-ID` on every response.
 - B8: tasks `backup`, `restore`; setting `VAARI_BACKUP_DIR`; `backups/` and `*.pre-restore-*` are git-ignored.
 - B6: `alembic_version` table; new tasks `migrate [--status]`, `db-revision`. The contract's "No Alembic / create_all" line is replaced (the brief asked for it).
 - A5: setting `VAARI_CORS_ORIGINS`; security headers on every response (see `docs/CONTRACT.md` §15.6). No response bodies changed.
@@ -244,5 +246,6 @@ Built from the "status and build brief for the backend work", on branches `part-
 - `pillow` (B7): decoding, orientation and re-encoding images to strip EXIF; also used in Part 5 preprocessing. Nothing in the standard library decodes JPEG.
 
 ### What was cut
+- **Error tracking service** (Sentry or similar): not built. It would be a new dependency sending data to a third party. Unhandled errors are logged as JSON with type, location and request ID, so a log shipper can alert on `"event": "unhandled_error"`.
 
 ### What was not verified

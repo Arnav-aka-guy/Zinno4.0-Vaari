@@ -5,6 +5,26 @@
     "version": "0.1"
   },
   "paths": {
+    "/api/ready": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Get Ready",
+        "description": "Readiness for a load balancer or Docker: 200 when the server can do real work, else 503.",
+        "operationId": "get_ready_api_ready_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/health": {
       "get": {
         "tags": [
