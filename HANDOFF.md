@@ -224,16 +224,19 @@ Built from the "status and build brief for the backend work", on branches `part-
 - **A3 Rate limits and lockout.** Sign-in: 10 attempts per address per minute, and a username is locked for 15 minutes after 5 wrong passwords (same answer for unknown usernames). Uploads: 30 per address per minute, refused in middleware before the body is read. 429 `RATE_LIMITED` with `Retry-After` (`tests/api/test_rate_limits.py`).
 - **A4 Link expiry and revocation.** Driver links expire after 30 days and record links after 365 (configurable). Operators can rotate or turn off a driver link (rotation also replaces the slot tokens it handed out) and turn off or reissue a record link from the Desk; the record hash never changes. 410 `LINK_EXPIRED` (`tests/api/test_link_expiry.py`, `web/e2e/links.spec.ts`).
 - **A5 CORS and security headers.** No CORS unless `VAARI_CORS_ORIGINS` names exact origins (production refuses `*` and plain http). Every response gets nosniff, frame DENY, `Referrer-Policy: no-referrer`, a Permissions-Policy, COOP/CORP and a Content-Security-Policy; API responses are `no-store`; production adds HSTS. The browser test checks the CSP blocks nothing the app loads (`tests/api/test_security_headers.py`, `web/e2e/links.spec.ts`).
+- **B6 Alembic migrations.** Baseline `0001` is exactly v0.1.0's schema; `0002` adds Part A's changes. Start-up runs `upgrade head` instead of `create_all`; an older create_all database is stamped and upgraded with its data kept. A test asserts a fresh migration matches the models, and every test database is now built by the migrations. `reset`/`seed` refuse in production without `--yes-delete-everything` (`tests/unit/test_migrations.py`).
 
 ### Contract changes (additive only, with the reason)
 - New settings `VAARI_ENV`, `VAARI_ALLOW_HOSTED_READER_IN_PRODUCTION` (A1). See `docs/CONTRACT.md` §15.
 - A2: tables `user_account`, `auth_session`; routes `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`; error code `FORBIDDEN` (403); health fields `env`, `auth`; settings `VAARI_SECRET_KEY`, `VAARI_SESSION_HOURS`. Officers get `driver_path: ""` from `GET /api/machines` (same shape, value hidden). In production the `X-Vaari-Passcode` header is refused (a behaviour change the brief asked for). Slot actions with no credential now give 401 before 404.
 - A3: error code `RATE_LIMITED` (429, `Retry-After`); settings `VAARI_LOGIN_RATE_PER_MIN`, `VAARI_LOGIN_LOCKOUT_FAILURES`, `VAARI_LOGIN_LOCKOUT_MINUTES`, `VAARI_UPLOAD_RATE_PER_MIN`, `VAARI_TRUST_PROXY`.
 - A4: columns `machine.link_expires_at`, `machine.link_revoked_at`, `service_record.token_expires_at`, `service_record.token_revoked_at`; error `LINK_EXPIRED` (410); routes `POST /api/machines/{id}/link/rotate|revoke`, `POST /api/slots/{id}/record/revoke|reissue`; `MachineOut.driver_link_status`, `MachineOut.driver_link_expires_at`; settings `VAARI_DRIVER_LINK_DAYS`, `VAARI_RECORD_LINK_DAYS`. A database made by v0.1.0 lacks the new columns: until B6 (migrations) it needs `python tasks.py reset`; from B6 on `alembic upgrade` adds them.
+- B6: `alembic_version` table; new tasks `migrate [--status]`, `db-revision`. The contract's "No Alembic / create_all" line is replaced (the brief asked for it).
 - A5: setting `VAARI_CORS_ORIGINS`; security headers on every response (see `docs/CONTRACT.md` §15.6). No response bodies changed.
 
 ### Libraries added beyond the contract, and why
 - `argon2-cffi` (A2): argon2id password hashing, as the brief asked ("argon2 or bcrypt"). The standard library has no memory-hard password hash.
+- `alembic` (B6): schema migrations, as the brief asked.
 
 ### What was cut
 

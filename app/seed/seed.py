@@ -324,8 +324,10 @@ def reset_db() -> dict[str, int]:
         if target.exists():
             shutil.rmtree(target, ignore_errors=True)
 
-    # Recreate tables
-    Base.metadata.create_all(bind=engine)
+    # Recreate tables with the migrations (pilot B6)
+    from app.migrate import ensure_schema
+
+    ensure_schema(get_engine())
 
     SessionFactory = get_session_factory()
     with SessionFactory() as session:
@@ -351,9 +353,17 @@ def reset_db() -> dict[str, int]:
 
 
 if __name__ == "__main__":
+    if settings.is_production and "--yes-delete-everything" not in sys.argv:
+        # Reset deletes the database and every photo; seeding adds fictional farmers.
+        print("Refused: reset and seed are for development. In production they would delete or mix in demo data.")
+        print("If you really mean it, add --yes-delete-everything.")
+        sys.exit(1)
     if "--reset" in sys.argv:
         reset_db()
     else:
+        from app.migrate import ensure_schema
+
+        ensure_schema()
         sf = get_session_factory()
         with sf() as s:
             counts = seed_data(s)

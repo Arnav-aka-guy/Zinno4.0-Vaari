@@ -9,7 +9,8 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.routing import Match, Route
 
 from app.config import settings
-from app.db import Base, get_engine, get_session_factory
+from app.db import get_engine, get_session_factory
+from app.migrate import ensure_schema
 from app.errors import setup_error_handlers
 import app.models  # ensure models are registered
 from app.routes.common import get_or_create_home_centre
@@ -32,7 +33,7 @@ from app.startup_checks import enforce_startup_checks
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     enforce_startup_checks(settings)
-    Base.metadata.create_all(bind=get_engine())
+    ensure_schema(get_engine())
     session_factory = get_session_factory()
     with session_factory() as session:
         get_or_create_home_centre(session)

@@ -14,7 +14,7 @@ This file is the single source of truth for the v0.1 build. Three people build V
 | --- | --- | --- |
 | Language | Python 3.11 or newer | |
 | API | FastAPI, Pydantic v2, uvicorn | |
-| Database | SQLite in WAL mode, `busy_timeout = 5000`, via SQLAlchemy 2.x (sync) | No Alembic. Tables are created at startup with `create_all`. `reset` deletes the file |
+| Database | SQLite in WAL mode, `busy_timeout = 5000`, via SQLAlchemy 2.x (sync) | Since pilot v0.2: Alembic migrations in `migrations/`, run at start-up (§15.7). `reset` deletes the file |
 | Uploads | python-multipart | |
 | Geometry | shapely 2 and pyproj | Phase 3 uses them. Phase 1 lists them in `requirements.txt` already |
 | Config | python-dotenv | |
@@ -451,3 +451,11 @@ With `VAARI_ENV=production` the app refuses to start, and lists every problem, w
 
 - **CORS.** Off unless `VAARI_CORS_ORIGINS` lists origins; then only those exact origins get `Access-Control-Allow-Origin`, without credentials (sessions use the `Authorization` header). Preflights from other origins get 400. Section 13's "one origin, so no CORS" stays the normal set-up.
 - **Headers on every response.** `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer` (driver and record tokens are in URLs), `Permissions-Policy: camera=(self), geolocation=(self), microphone=(), payment=(), usb=()`, `Cross-Origin-Opener-Policy: same-origin`, `Cross-Origin-Resource-Policy: same-origin`, and `Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://tile.openstreetmap.org; connect-src 'self'; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'`. `/api` responses add `Cache-Control: no-store`. Production adds `Strict-Transport-Security: max-age=31536000; includeSubDomains`.
+
+### 15.7 Migrations (B6)
+
+- `migrations/versions/0001_baseline.py` is exactly the v0.1.0 schema. `0002_pilot_accounts_links.py` adds Part A's tables and columns. New schema changes get a new revision (`python tasks.py db-revision "message"`), never an edit to an old one.
+- Start-up, `reset`, `seed`, `purge-images`, `create-user` and `migrate` all call `app.migrate.ensure_schema()`, which upgrades to head. A database made by `create_all` (no `alembic_version` table) is stamped with the revision its tables match (`0001` for v0.1.0, `0002` for a Part A build) and then upgraded, keeping its data.
+- `python tasks.py migrate` upgrades; `migrate --status` prints the current and head revisions.
+- A test checks that a fresh migration matches the models exactly (`alembic.autogenerate.compare_metadata` finds no difference), and the test suite's databases are built by the migrations.
+- `reset` and `seed` refuse to run when `VAARI_ENV=production` unless given `--yes-delete-everything`.

@@ -316,6 +316,31 @@ def task_openapi() -> int:
     return 0
 
 
+def task_migrate(args: list[str]) -> int:
+    """Upgrade the database to the newest migration, or show the current revision (--status)."""
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    from app.config import settings
+    from app.migrate import current_revision, ensure_schema, head_revision
+
+    if "--status" in args:
+        print(f"Database: {settings.db_path}")
+        print(f"Current revision: {current_revision()}  Head: {head_revision()}")
+        return 0
+    rev = ensure_schema()
+    print(f"Database {settings.db_path} is at revision {rev}.")
+    return 0
+
+
+def task_db_revision(args: list[str]) -> int:
+    """Autogenerate a new migration from model changes: python tasks.py db-revision "message"."""
+    if not args:
+        print('Usage: python tasks.py db-revision "short message"')
+        return 1
+    py = get_venv_python()
+    return run_cmd([str(py), "-m", "alembic", "revision", "--autogenerate", "-m", " ".join(args)])
+
+
 def task_seed() -> int:
     """Load seed data into an existing database."""
     py = get_venv_python()
@@ -345,10 +370,11 @@ def task_purge_images(args: list[str]) -> int:
     dry_run = "--dry-run" in args
     if str(ROOT) not in sys.path:
         sys.path.insert(0, str(ROOT))
-    from app.db import Base, get_engine, get_session_factory
+    from app.db import get_session_factory
+    from app.migrate import ensure_schema
     from app.routes.intake import purge_expired_register_images
 
-    Base.metadata.create_all(bind=get_engine())
+    ensure_schema()
     sf = get_session_factory()
     with sf() as session:
         deleted = purge_expired_register_images(session, dry_run=dry_run)
@@ -433,7 +459,10 @@ def _run_e2e_pass(mode: str, spec_args: list[str]) -> int:
     py = get_venv_python()
     try:
         print(f"[{mode}] Initializing temporary database...")
-        ret = run_cmd([str(py), "-m", "app.seed.seed", "--reset"], env=env)
+        reset_cmd = [str(py), "-m", "app.seed.seed", "--reset"]
+        if mode == "production":
+            reset_cmd.append("--yes-delete-everything")  # a throwaway temporary database
+        ret = run_cmd(reset_cmd, env=env)
         if ret != 0:
             print("Failed to initialize temporary database.")
             return ret
@@ -519,7 +548,7 @@ def main():
         print(
             "Available tasks: setup, dev, test, seed, reset, smoke, serve, tunnel, "
             "build-web, e2e, reader-eval, purge-images, screenshots, check-config, "
-            "create-user, disable-user, list-users, openapi"
+            "create-user, disable-user, list-users, openapi, migrate, db-revision"
         )
         sys.exit(1)
 
@@ -555,6 +584,10 @@ def main():
             sys.path.insert(0, str(ROOT))
         from app.cli_users import main as users_main
         sys.exit(users_main([task] + extra_args))
+    elif task == "migrate":
+        sys.exit(task_migrate(extra_args))
+    elif task == "db-revision":
+        sys.exit(task_db_revision(extra_args))
     elif task == "openapi":
         sys.exit(task_openapi())
     elif task == "check-config":
