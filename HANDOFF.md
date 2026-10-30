@@ -216,7 +216,32 @@ python tasks.py serve
 
 ## Pilot build (v0.2): one hiring centre
 
-Built from the "status and build brief for the backend work", on branches `part-a-security`, `part-b-data`, `part-c-ops`, `part-5-reader`, `part-6-satellite-docs`, one commit per numbered item. Nothing was pushed.
+Built from the "status and build brief for the backend work" on 30 October 2026, by Claude (Opus 5.5) working in a cloud workspace. One branch per part, each starting from the one before, one commit per numbered item (Part 5 and 6 bullets are numbered here R1–R8 and S1–S2): `part-a-security` (A1–A5) → `part-b-data` (B6–B8) → `part-c-ops` (C9–C11) → `part-5-reader` (R1–R8) → `part-6-satellite-docs` (S1–S2) → `part-7-handoff` (this section, README and privacy notes). **Nothing was pushed.** The real output of every test run, item by item, is in [`notes/pilot-build-verification.md`](notes/pilot-build-verification.md).
+
+### How to run (exact commands)
+
+Development (unchanged, plus the new commands):
+
+```bash
+python tasks.py setup && python tasks.py reset && python tasks.py serve   # passcode change-me, development only
+python tasks.py test        # 376 tests
+python tasks.py e2e         # development pass, then a production sign-in pass
+python tasks.py reader-eval # writes docs/READER_EVAL.md for VAARI_READER
+```
+
+Production: follow [`docs/DEPLOY.md`](docs/DEPLOY.md) (Docker, `.env` from `.env.production.example`, `create-user`, HTTPS in front, `backup`/`restore`).
+
+### Definition of done (Part 7), checked on `part-7-handoff`
+
+| Item | Result |
+| --- | --- |
+| All tests pass | `376 passed` (pytest). `ruff check .`: all checks passed |
+| Web build | `tsc -b && vite build` passes |
+| e2e | Development pass `8 passed, 2 skipped` (the skipped two are the production-only specs); production pass `2 passed` |
+| Refuses to start in production with unsafe settings | Yes. Unit tests, plus by hand in Docker: empty or default `VAARI_SECRET_KEY` gives the `refused_to_start` log line and the container never becomes healthy |
+| Fresh clone deploys with Docker following DEPLOY.md | Yes, with one caveat: a fresh `git clone` of `part-7-handoff` was taken through DEPLOY.md steps 3 to 8 (check-config, up to healthy, `/api/ready`, two accounts, role checks, passcode 401, register upload falls back with EXIF stripped, backup, stop, verify, restore, data back, `migrate --status` at head). Docker Hub is blocked in the build workspace, so `python:3.12-slim` and `node:22-slim` were replaced by local Ubuntu 24.04 stand-ins through the `PYTHON_IMAGE` / `NODE_IMAGE` build arguments. The CI `docker` job will be the first build on the official images |
+| Gemini reader evaluated on synthetic pages | **Not done.** The reader, its probe and the evaluation are built and tested with fakes, and the pass bar is fixed, but the Gemini API was unreachable from the build workspace and there was no key. `docs/READER_EVAL.md` says "Not run" in the Gemini section |
+| HANDOFF updated | This section |
 
 ### What changed (each item with the test that proves it)
 - **A1 Production mode.** `VAARI_ENV=production` refuses to start with an empty, default or short (<16) passcode, or with a hosted reader enabled without `VAARI_ALLOW_HOSTED_READER_IN_PRODUCTION=true`. All problems are listed at once. `python tasks.py check-config` prints them (`tests/unit/test_production_mode.py`).
@@ -263,4 +288,23 @@ Built from the "status and build brief for the backend work", on branches `part-
 - **Anthropic as a hosted reader provider** (R1). The brief asks for Gemini for the demo and a custom model later; keeping a second third-party path doubled the privacy surface for no pilot need.
 - **Error tracking service** (Sentry or similar): not built. It would be a new dependency sending data to a third party. Unhandled errors are logged as JSON with type, location and request ID, so a log shipper can alert on `"event": "unhandled_error"`.
 
+- **Physical-world items from Part 2 that the brief did not ask for:** WhatsApp Business API, an offline driver queue and Postgres are still not built.
+
 ### What was not verified
+- **Gemini on real requests.** No call to Gemini was made. The request format (header key, `responseSchema`, `generationConfig`) follows Google's REST API as documented, but whether the chosen model accepts `responseSchema` as written, and its accuracy on the synthetic set, are unknown until `python tasks.py reader-eval` is run with a key. Expect the first run to need the schema or prompt adjusted.
+- **Official Docker base images and GitHub Actions.** The Dockerfile was built on stand-in base images, and the CI workflow has not run on GitHub (nothing was pushed). Both should be watched on the first push.
+- **Caddy / HTTPS set-up** in DEPLOY.md step 6 was not tested here.
+- **Real phones in production mode.** Camera and GPS over HTTPS were verified in v0.1 (phase 2); the production sign-in, link expiry and rotation screens were tested in headless Chromium only.
+- **Punjabi wording.** The new Punjabi unit words, month spellings and intake banner should be checked by a native speaker, as the contract already asks for the message templates.
+- **Load.** Rate limits were tested for correctness, not under load; counts are per process.
+- **Python version.** Tests ran on Python 3.13 here; CI and the Docker image use 3.12.
+
+### Things the next person must know
+1. **Sign-in.** In production there is no passcode. Create accounts with `python tasks.py create-user`. The frontend switches to a username/password form when `/api/health` says `auth: "accounts"`.
+2. **`VAARI_SECRET_KEY` signs every session.** Changing it signs everyone out. Keep it in `.env` only.
+3. **Schema changes go through Alembic.** Edit the models, then `python tasks.py db-revision "what changed"`, then commit the new file in `migrations/versions/`. `tests/unit/test_migrations.py` fails if models and migrations drift. Never edit `0001_baseline.py`: it is v0.1.0 exactly.
+4. **Photo hashes changed meaning in B7.** They are of the stored, cleaned JPEG. This is the only non-additive contract change, and the brief asked for it.
+5. **Readers.** Only `RegisterReader` and `get_reader()` may be imported outside `app/intake/`. The mock refuses in production. `custom` is the place for a real model ([FUTURE_CUSTOM_READER.md](docs/FUTURE_CUSTOM_READER.md)).
+6. **Logs.** Never pass personal data into a log call. `extra={"fields": ...}` only lets allow-listed keys through (`app/logging_setup.ALLOWED_FIELDS`), and `test_no_names_phones_tokens_or_images_in_logs` will catch most mistakes.
+7. **The e2e screenshot spec rewrites `docs/screenshots/`** on every run. Revert those files unless you meant to update them.
+8. **Branches.** Merge the six part branches into `main` in order (each is a fast-forward of the one before), or just merge `part-7-handoff`, which contains them all.

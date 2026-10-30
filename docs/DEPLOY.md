@@ -33,7 +33,7 @@ The server **refuses to start** in production mode if:
 - `VAARI_CORS_ORIGINS` contains `*` or a plain `http://` origin;
 - `VAARI_PHOTO_STORE` is anything but `local`.
 
-It prints every problem at once. You can check without starting anything:
+It prints every problem at once, as one log line with `"event": "refused_to_start"`; with `restart: unless-stopped` the container then keeps restarting and never becomes healthy until the setting is fixed. You can check without starting anything:
 
 ```bash
 docker compose run --rm vaari python tasks.py check-config
