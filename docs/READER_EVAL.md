@@ -45,7 +45,50 @@ Passing means only that the drafts are worth showing to staff. **Every row is st
 Each run of `python tasks.py reader-eval` replaces the section for the reader it ran.
 
 <!-- results:mock:start -->
-Not run yet.
+### mock
+
+Run 2026-10-30T07:03:09Z. Verdict against the pass bar: **FAIL**.
+
+| Check (synth_01 to synth_06) | Result | Bar | Met |
+| --- | --- | --- | --- |
+| Rows found | 36 of 48 | 48 of 48 | **no** |
+| Invented rows | 0 | 0 | yes |
+| Silent phone errors | 30 of 48 | 0 of 48 | **no** |
+| Silent acres errors | 23 of 48 | 0 of 48 | **no** |
+| phone right | 0 of 48 | at least 46 of 48 | **no** |
+| acres right | 1 of 48 | at least 46 of 48 | **no** |
+| service_type right | 9 of 48 | at least 45 of 48 | **no** |
+| harvest_date right | 0 of 48 | at least 44 of 48 | **no** |
+| village right | 8 of 48 | at least 43 of 48 | **no** |
+| name right | 1 of 48 | reported only | yes |
+
+Per page (k of N rows right for each field):
+
+| Page | Rows found | Phone | Acres | Machine | Date | Village | Name | Silent phone | Silent acres | Seconds | Error |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| page1 | 6 of 6 | 5 of 6 | 5 of 6 | 6 of 6 | 6 of 6 | 6 of 6 | 6 of 6 | 0 | 0 | 0.00 |  |
+| synth_01 | 6 of 8 | 0 of 8 | 0 of 8 | 1 of 8 | 0 of 8 | 0 of 8 | 0 of 8 | 5 | 4 | 0.03 |  |
+| synth_02 | 6 of 8 | 0 of 8 | 0 of 8 | 4 of 8 | 0 of 8 | 1 of 8 | 1 of 8 | 5 | 4 | 0.03 |  |
+| synth_03 | 6 of 8 | 0 of 8 | 1 of 8 | 1 of 8 | 0 of 8 | 2 of 8 | 0 of 8 | 5 | 3 | 0.03 |  |
+| synth_04 | 6 of 8 | 0 of 8 | 0 of 8 | 2 of 8 | 0 of 8 | 3 of 8 | 0 of 8 | 5 | 4 | 0.03 |  |
+| synth_05 | 6 of 8 | 0 of 8 | 0 of 8 | 0 of 8 | 0 of 8 | 0 of 8 | 0 of 8 | 5 | 4 | 0.03 |  |
+| synth_06 | 6 of 8 | 0 of 8 | 0 of 8 | 1 of 8 | 0 of 8 | 2 of 8 | 0 of 8 | 5 | 4 | 0.03 |  |
+
+Most common errors (field: written on the page → expected → read):
+
+- 4 × village: `Talwandi Sabo` → `talwandi sabo` → `(row missing)`
+- 3 × service_type: `Baler` → `baler` → `super_seeder`
+- 3 × service_type: `ਮਲਚਰ` → `mulcher` → `super_seeder`
+- 3 × service_type: `ਮਲਚਰ` → `mulcher` → `happy_seeder`
+- 3 × service_type: `ਬੇਲਰ` → `baler` → `super_seeder`
+- 3 × service_type: `Happy Seeder` → `happy_seeder` → `super_seeder`
+- 3 × village: `Bhucho Khurd` → `bhucho khurd` → `(row missing)`
+- 3 × service_type: `Mulcher` → `mulcher` → `(row missing)`
+- 3 × service_type: `Baler` → `baler` → `happy_seeder`
+- 3 × village: `Pind Kalan` → `pind kalan` → `kot shamir`
+
+The mock is not a reader: it returns the same six fixture rows for every image, so it is expected to fail on the synthetic set. It scores on `page1` because that fixture is page1. This run checks that the evaluation itself works, including counting silent errors.
+
 <!-- results:mock:end -->
 
 <!-- results:gemini_demo:start -->

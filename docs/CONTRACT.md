@@ -75,7 +75,7 @@ vaari/
 | `serve` | `build-web`, then uvicorn on `0.0.0.0:8000` serving the API and the built frontend | 1 (API only), 2 |
 | `e2e` | Start `serve` on a temporary database, run Playwright, stop the server | 2 |
 | `tunnel` | Run `cloudflared tunnel --url http://localhost:8000` if cloudflared is installed, otherwise print how to install it | 2 |
-| `reader-eval` | Run the configured reader on `examples/register_pages/` and print counts | 3 |
+| `reader-eval` | Run the configured reader on `examples/register_pages/` and print counts. *(Pilot v0.2: per-field k of N per page, silent errors, common errors, pass bar; writes `docs/READER_EVAL.md`.)* | 3 |
 | `purge-images [--dry-run]` | Delete register page images past `image_delete_after` | 3 |
 
 ## 4. Configuration (`.env`)
