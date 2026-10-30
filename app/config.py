@@ -90,6 +90,11 @@ class Settings:
         return os.environ.get("VAARI_PHOTO_STORE", "local").strip().lower() or "local"
 
     @property
+    def backup_dir(self) -> str:
+        """Where `python tasks.py backup` writes. Copy it off the machine too (see docs/DEPLOY.md)."""
+        return os.environ.get("VAARI_BACKUP_DIR", "backups")
+
+    @property
     def demo_passcode(self) -> str:
         return os.environ.get("VAARI_DEMO_PASSCODE", "change-me")
 

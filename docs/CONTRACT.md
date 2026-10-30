@@ -401,6 +401,7 @@ This section records every change made for the one-centre pilot. Each one is add
 | `VAARI_DRIVER_LINK_DAYS` | `30` | Lifetime of a new driver link (machine token) |
 | `VAARI_RECORD_LINK_DAYS` | `365` | Lifetime of a new service-record link |
 | `VAARI_PHOTO_STORE` | `local` | Where photos are kept. Only `local` is built; any other value is refused at start-up |
+| `VAARI_BACKUP_DIR` | `backups` | Where `python tasks.py backup` writes |
 | `VAARI_CORS_ORIGINS` | empty | Exact origins allowed to call the API cross-origin. Empty = no CORS headers at all. Production refuses `*` and non-`https://` entries |
 | `VAARI_TRUST_PROXY` | `false` | Take the client address from the first `X-Forwarded-For` value. Turn on only behind your own reverse proxy |
 
@@ -466,3 +467,8 @@ With `VAARI_ENV=production` the app refuses to start, and lists every problem, w
 - **Interface.** `app/storage.PhotoStore` (`put`, `get`, `exists`, `delete`). `LocalDiskStore` keeps files under `VAARI_DATA_DIR/photos/` and `VAARI_DATA_DIR/register_pages/`, written atomically. `S3CompatibleStore` is a named placeholder that raises "not built"; `VAARI_PHOTO_STORE=s3` makes start-up refuse in every mode. Nothing outside `app/storage/` touches photo files.
 - **Clean before saving.** Every uploaded image (start, done and register pages) is decoded, turned upright from its EXIF orientation, flattened to RGB and saved again as JPEG (quality 88) with no EXIF, GPS, XMP, ICC profile or comments. Images over 40 million pixels, and files that cannot be decoded, get 422 `VALIDATION_ERROR`. The same input always gives the same bytes.
 - **Not additive (asked for by the brief).** `evidence.photo_sha256`, `evidence.photo_bytes` and `intake_page.image_sha256` are now of the *stored, cleaned* file, not the raw upload, so the stored file can always be checked against the record hash. Exact-duplicate detection (`exact_duplicate_photo`) compares these hashes, so it still catches the same photo sent twice. Stored names end in `.jpg`. `GET /api/intake/{id}/image` always returns `image/jpeg`. Response shapes are unchanged.
+
+### 15.9 Backup and restore (B8)
+
+- `python tasks.py backup [--out DIR] [--keep N]` writes `vaari-backup-<UTC time>/` with `vaari.sqlite` (SQLite online backup API, so it is safe while the server runs and includes writes still in the WAL), `photos/`, `register_pages/` and `manifest.json` (SHA-256 of every file, row counts, schema revision). The copy must pass `PRAGMA integrity_check` or the backup fails. `--keep N` removes all but the newest N.
+- `python tasks.py restore DIR [--force] [--verify-only]` checks every hash, refuses extra or missing files, checks integrity, and only then moves the current database (and `-wal`/`-shm`) and photo folders aside as `*.pre-restore-<time>`, copies the backup in, and upgrades the schema to head. Without `--force` it refuses when a database already exists. Stop the server first.

@@ -341,6 +341,59 @@ def task_db_revision(args: list[str]) -> int:
     return run_cmd([str(py), "-m", "alembic", "revision", "--autogenerate", "-m", " ".join(args)])
 
 
+def task_backup(args: list[str]) -> int:
+    """Online backup of the database and photos: python tasks.py backup [--out DIR] [--keep N]."""
+    import argparse
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    from app.backup import BackupError, create_backup, prune_backups
+    from app.config import settings
+
+    parser = argparse.ArgumentParser(prog="tasks.py backup")
+    parser.add_argument("--out", default=settings.backup_dir)
+    parser.add_argument("--keep", type=int, default=0, help="keep only the newest N backups")
+    a = parser.parse_args(args)
+    try:
+        path = create_backup(Path(settings.db_path), Path(settings.data_dir), Path(a.out))
+    except BackupError as exc:
+        print(f"Backup failed: {exc}")
+        return 1
+    print(f"Backup written and verified: {path}")
+    if a.keep:
+        for old in prune_backups(Path(a.out), a.keep):
+            print(f"Removed old backup: {old}")
+    return 0
+
+
+def task_restore(args: list[str]) -> int:
+    """Restore a backup folder: python tasks.py restore BACKUP_DIR [--force]. Stop the server first."""
+    import argparse
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    from app.backup import BackupError, restore_backup, verify_backup
+    from app.config import settings
+
+    parser = argparse.ArgumentParser(prog="tasks.py restore")
+    parser.add_argument("backup_dir")
+    parser.add_argument("--force", action="store_true", help="replace an existing database")
+    parser.add_argument("--verify-only", action="store_true", help="check the backup and change nothing")
+    a = parser.parse_args(args)
+    try:
+        if a.verify_only:
+            m = verify_backup(Path(a.backup_dir))
+            print(f"Backup is complete and undamaged ({len(m['files'])} files, made {m['created_at']}).")
+            return 0
+        summary = restore_backup(Path(a.backup_dir), Path(settings.db_path), Path(settings.data_dir), force=a.force)
+    except BackupError as exc:
+        print(f"Restore refused: {exc}")
+        return 1
+    print(f"Restored {summary['restored_from']} (made {summary['backup_created_at']}).")
+    print(f"Schema revision: {summary['schema_revision']}. Requests: {summary['row_counts'].get('request', 0)}.")
+    for k in summary["kept_previous"]:
+        print(f"Previous data kept at: {k}")
+    return 0
+
+
 def task_seed() -> int:
     """Load seed data into an existing database."""
     py = get_venv_python()
@@ -548,7 +601,7 @@ def main():
         print(
             "Available tasks: setup, dev, test, seed, reset, smoke, serve, tunnel, "
             "build-web, e2e, reader-eval, purge-images, screenshots, check-config, "
-            "create-user, disable-user, list-users, openapi, migrate, db-revision"
+            "create-user, disable-user, list-users, openapi, migrate, db-revision, backup, restore"
         )
         sys.exit(1)
 
@@ -584,6 +637,10 @@ def main():
             sys.path.insert(0, str(ROOT))
         from app.cli_users import main as users_main
         sys.exit(users_main([task] + extra_args))
+    elif task == "backup":
+        sys.exit(task_backup(extra_args))
+    elif task == "restore":
+        sys.exit(task_restore(extra_args))
     elif task == "migrate":
         sys.exit(task_migrate(extra_args))
     elif task == "db-revision":

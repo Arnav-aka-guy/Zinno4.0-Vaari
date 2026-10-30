@@ -12,3 +12,4 @@ Real output from the test run after each numbered item (summary lines pasted as 
 | A5 CORS and security headers | part-a-security | `python tasks.py test` / `e2e` | `211 passed, 1 warning in 24.89s` / development `6 passed (20.7s)`, production `2 passed (3.5s)` |
 | B6 Alembic migrations | part-b-data | `python tasks.py test` / `e2e` | `218 passed, 1 warning in 23.92s` / development `6 passed (20.8s)`, production `2 passed (3.5s)` |
 | B7 photo storage and EXIF stripping | part-b-data | `python tasks.py test` / `e2e` | `235 passed, 1 warning in 27.04s` / development `6 passed (20.9s)`, production `2 passed (3.5s)` |
+| B8 backup and restore | part-b-data | `python tasks.py test` | `245 passed, 1 warning in 28.13s` |
