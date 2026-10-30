@@ -25,6 +25,8 @@ test('Intake banner says photos go to Google when the Gemini demo reader is on',
     'Photos you upload here are sent to Google, a third party. Use synthetic pages only.',
   );
   await expect(banner).toHaveClass(/outcome-error/);
+  // A sideways page can be turned before it is stored and read.
+  await expect(page.locator('#intake-rotate')).toHaveValue('0');
 });
 
 test('Intake banner shows the type-the-rows fallback when the reader is down', async ({ page }) => {

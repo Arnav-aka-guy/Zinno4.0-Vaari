@@ -408,9 +408,10 @@ export async function downloadUsageCsv(): Promise<string> {
 }
 
 // ── Intake (passcode, Phase 3) ───────────────────────────────
-export function uploadRegisterPhoto(photo: File): Promise<IntakeOut> {
+export function uploadRegisterPhoto(photo: File, rotate: 0 | 90 | 180 | 270 = 0): Promise<IntakeOut> {
   const form = new FormData();
   form.append('photo', photo);
+  if (rotate) form.append('rotate', String(rotate));
   return request<IntakeOut>('/api/intake/register-photo', {
     method: 'POST',
     headers: { ...authHeaders('passcode') },

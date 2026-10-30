@@ -2970,6 +2970,11 @@
               }
             ],
             "title": "Photo"
+          },
+          "rotate": {
+            "type": "integer",
+            "title": "Rotate",
+            "default": 0
           }
         },
         "type": "object",

@@ -4,7 +4,7 @@ import hashlib
 from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
-from fastapi import APIRouter, Depends, File, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, UploadFile, status
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
@@ -16,6 +16,7 @@ from app.enums import ServiceType
 from app.errors import VaariError
 from app.event_log import log_event
 from app.evidence.photos import read_image_upload
+from app.intake.preprocess import VALID_TURNS, preprocess_for_reader, rotate_clockwise
 from app.intake.prompt import PROMPT_VERSION
 from app.intake.reader import ReaderUnavailable, get_reader, reader_name
 from app.intake.validate import has_blocking_issues, validate_row
@@ -75,6 +76,7 @@ def get_reader_status_for_health() -> str:
 
 async def _validate_and_save_register_photo(
     file: UploadFile | None,
+    rotate: int = 0,
 ) -> tuple[str, str, bytes]:
     """Validate, strip metadata and re-encode a register photo, store it.
 
@@ -89,7 +91,7 @@ async def _validate_and_save_register_photo(
         )
 
     raw = await read_image_upload(file)
-    clean = sanitize_image(raw)
+    clean = rotate_clockwise(sanitize_image(raw), rotate)
     sha = hashlib.sha256(clean).hexdigest()
     ref = get_photo_store().put("register_pages", f"register_{sha[:12]}.jpg", clean)
     return ref, sha, clean
@@ -128,10 +130,20 @@ def _serialize_intake_page(session: Session, page: IntakePage) -> dict[str, Any]
 @router.post("/register-photo")
 async def upload_register_photo(
     photo: UploadFile | None = File(None),
+    rotate: int = Form(0),
     session: Session = Depends(get_db),
     _principal: Principal = Depends(require_operator),
 ) -> dict[str, Any]:
-    image_path, image_sha256, raw_bytes = await _validate_and_save_register_photo(photo)
+    if rotate not in VALID_TURNS:
+        raise VaariError(
+            error_code="VALIDATION_ERROR",
+            message="rotate must be 0, 90, 180 or 270.",
+            http_status=422,
+            details={"field": "rotate"},
+        )
+    image_path, image_sha256, stored_bytes = await _validate_and_save_register_photo(photo, rotate)
+    # Every reader gets the preprocessed copy: upright, 1000-2000 px, greyscale, contrast stretched.
+    reader_bytes, _prep = preprocess_for_reader(stored_bytes)
     media_type = "image/jpeg"
 
     home_centre = get_or_create_home_centre(session)
@@ -142,7 +154,7 @@ async def upload_register_photo(
         image_path=image_path,
         image_sha256=image_sha256,
         image_delete_after=now + timedelta(days=7),
-        reader=settings.reader,
+        reader={"gemini_demo": "hosted"}.get(reader_name(settings), reader_name(settings)),
         prompt_version=PROMPT_VERSION,
         latency_ms=None,
         status="drafted",
@@ -155,7 +167,7 @@ async def upload_register_photo(
 
     try:
         reader = get_reader(settings)
-        draft_result = reader.read(raw_bytes, media_type=media_type)
+        draft_result = reader.read(reader_bytes, media_type=media_type)
         clear_reader_failure()
     except (ReaderUnavailable, Exception) as exc:
         record_reader_failure()

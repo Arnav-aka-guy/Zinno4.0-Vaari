@@ -89,6 +89,8 @@ export default function IntakePage() {
   const navigate = useNavigate();
 
   const [, setReaderMode] = useState<string>('mock');
+  // Pilot Part 5: turn a page photographed sideways before it is stored and read
+  const [rotate, setRotate] = useState<0 | 90 | 180 | 270>(0);
   const [health, setHealth] = useState<Health | null>(null);
   const [villages, setVillages] = useState<string[]>([
     'Pind Kalan',
@@ -186,7 +188,7 @@ export default function IntakePage() {
     setPhotoUrl(localObjUrl);
 
     try {
-      const uploadedDraft = await uploadRegisterPhoto(file);
+      const uploadedDraft = await uploadRegisterPhoto(file, rotate);
       setDraft(uploadedDraft);
       setReaderMode(uploadedDraft.reader);
       setRows(buildEditableRows(uploadedDraft));
@@ -383,6 +385,22 @@ export default function IntakePage() {
               Select a photo or capture from camera. A draft is never a request until confirmed.
             </span>
           </div>
+        </div>
+        <div className="mt-2">
+          <label className="attr-label" htmlFor="intake-rotate">
+            Turn the photo before reading{' '}
+            <select
+              id="intake-rotate"
+              value={rotate}
+              onChange={e => setRotate(Number(e.target.value) as 0 | 90 | 180 | 270)}
+              disabled={uploading}
+            >
+              <option value={0}>No turn (upright)</option>
+              <option value={90}>Turn right (90°)</option>
+              <option value={180}>Upside down (180°)</option>
+              <option value={270}>Turn left (90°)</option>
+            </select>
+          </label>
         </div>
         <div className="mt-2">
           <input
