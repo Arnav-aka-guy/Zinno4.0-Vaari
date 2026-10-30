@@ -1,5 +1,7 @@
 # Register Reader Evaluation Guide
 
+> **Pilot v0.2:** the main evaluation set is now `synth_01` … `synth_06`, drawn by `scripts/make_synthetic_register_pages.py` (fixed seed, invented data). Only their `.expected.json` files are committed. The pass bar and the results are in [`docs/READER_EVAL.md`](../../docs/READER_EVAL.md).
+
 This directory contains evaluation fixtures and benchmark results for the Vaari register intake OCR/vision reader (`python tasks.py reader-eval`).
 
 ---

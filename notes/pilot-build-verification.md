@@ -22,3 +22,4 @@ Real output from the test run after each numbered item (summary lines pasted as 
 | R4 image preprocessing | part-5-reader | `python tasks.py test` / `e2e` | `296 passed, 1 warning in 30.02s` / development `8 passed (22.6s)`, production `2 passed (3.6s)` |
 | R5 Gurmukhi digits and mixed entries | part-5-reader | `python tasks.py test` | `351 passed, 1 warning in 31.02s` |
 | R6 strict JSON, per-field confidence | part-5-reader | `python tasks.py test` | `364 passed, 1 warning in 31.55s` |
+| R7a reader pass bar + synthetic set (no eval run yet) | part-5-reader | `python tasks.py test` | `364 passed` (unchanged; docs and generator only) |
