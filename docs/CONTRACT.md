@@ -394,6 +394,11 @@ This section records every change made for the one-centre pilot. Each one is add
 | `VAARI_ALLOW_HOSTED_READER_IN_PRODUCTION` | `false` | Explicit override. Without it, production refuses to start while any hosted reader is enabled |
 | `VAARI_SECRET_KEY` | empty | Signs login sessions. Required in production, at least 32 characters. In development an empty value means a random key per process |
 | `VAARI_SESSION_HOURS` | `12` | How long a sign-in lasts |
+| `VAARI_LOGIN_RATE_PER_MIN` | `10` | Sign-in attempts per client address per minute |
+| `VAARI_LOGIN_LOCKOUT_FAILURES` | `5` | Wrong passwords for one username (within the lockout window) before it is locked |
+| `VAARI_LOGIN_LOCKOUT_MINUTES` | `15` | Lockout window and length |
+| `VAARI_UPLOAD_RATE_PER_MIN` | `30` | Photo uploads (`register-photo`, slot `start`, slot `done`) per client address per minute |
+| `VAARI_TRUST_PROXY` | `false` | Take the client address from the first `X-Forwarded-For` value. Turn on only behind your own reverse proxy |
 
 ### 15.2 Production start-up checks
 
@@ -423,3 +428,10 @@ With `VAARI_ENV=production` the app refuses to start, and lists every problem, w
 - **event_log.** Rows written by a signed-in account name it: `operator:asha`. Passcode actions stay `operator`.
 - **Commands.** `python tasks.py create-user --username NAME --role operator|officer [--password-stdin]` (passwords at least 12 characters), `disable-user --username NAME` (also signs out every session), `list-users`, `openapi` (regenerates `docs/openapi.json`).
 - **Frontend.** When `health.auth` is `accounts`, Desk, Intake and Officer show a username and password form, keep the session token in `sessionStorage`, and show "Sign out". Officer opens for `officer` or `operator`; Desk and Intake for `operator`. In development the screens open with the demo passcode as before.
+
+### 15.4 Rate limits and lockout (A3)
+
+- **New error code.** `RATE_LIMITED` 429, with a `Retry-After` header and `details.retry_after_s`.
+- **Per address.** `POST /api/auth/login` and the three photo uploads are counted per client address in a 60-second sliding window, checked in middleware before the body is read.
+- **Per username.** After `VAARI_LOGIN_LOCKOUT_FAILURES` wrong passwords within the window, the username is locked for `VAARI_LOGIN_LOCKOUT_MINUTES`, even for the right password. Unknown usernames get the same answer, so the response does not reveal which accounts exist. A successful sign-in clears the count. Locking a real account writes `event_log` `login_locked`.
+- **Scope.** Counts live in memory in one server process and reset on restart. That fits one server at one centre.

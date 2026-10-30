@@ -8,6 +8,7 @@ export const ERROR_MESSAGES: Record<string, string> = {
   NOT_FOUND: 'That item was not found.',
   UNAUTHORIZED: 'Please sign in again.',
   FORBIDDEN: 'Your account cannot do this.',
+  RATE_LIMITED: 'Too many tries in a short time. Wait a minute and try again.',
   WRONG_SLOT: 'This action is not allowed for this slot.',
   INVALID_TRANSITION: 'This action is not allowed in the current state.',
   DUPLICATE_START: 'This job has already been started from another device.',

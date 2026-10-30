@@ -32,7 +32,11 @@ class VaariError(Exception):
 def setup_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(VaariError)
     async def vaari_error_handler(request: Request, exc: VaariError) -> JSONResponse:
-        return JSONResponse(status_code=exc.http_status, content=exc.to_dict())
+        headers = None
+        retry = exc.details.get("retry_after_s") if exc.http_status == 429 else None
+        if retry is not None:
+            headers = {"Retry-After": str(retry)}
+        return JSONResponse(status_code=exc.http_status, content=exc.to_dict(), headers=headers)
 
     @app.exception_handler(RequestValidationError)
     async def validation_error_handler(request: Request, exc: RequestValidationError) -> JSONResponse:

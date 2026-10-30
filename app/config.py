@@ -45,6 +45,30 @@ class Settings:
         return "accounts" if self.is_production else "passcode"
 
     @property
+    def login_rate_per_min(self) -> int:
+        """Sign-in attempts allowed per client address per minute."""
+        return int(os.environ.get("VAARI_LOGIN_RATE_PER_MIN", "10"))
+
+    @property
+    def login_lockout_failures(self) -> int:
+        """Wrong passwords in a row (per username) before the username is locked."""
+        return int(os.environ.get("VAARI_LOGIN_LOCKOUT_FAILURES", "5"))
+
+    @property
+    def login_lockout_minutes(self) -> float:
+        return float(os.environ.get("VAARI_LOGIN_LOCKOUT_MINUTES", "15"))
+
+    @property
+    def upload_rate_per_min(self) -> int:
+        """Photo uploads (register pages, start and done photos) per client address per minute."""
+        return int(os.environ.get("VAARI_UPLOAD_RATE_PER_MIN", "30"))
+
+    @property
+    def trust_proxy(self) -> bool:
+        """Use the first X-Forwarded-For address as the client (only behind your own reverse proxy)."""
+        return os.environ.get("VAARI_TRUST_PROXY", "false").strip().lower() in ("true", "1")
+
+    @property
     def demo_passcode(self) -> str:
         return os.environ.get("VAARI_DEMO_PASSCODE", "change-me")
 

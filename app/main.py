@@ -24,6 +24,7 @@ from app.routes.records import router as records_router
 from app.routes.requests import router as requests_router
 from app.routes.schedule import router as schedule_router
 from app.routes.slots import router as slots_router
+from app.ratelimit import RateLimitMiddleware
 from app.startup_checks import enforce_startup_checks
 
 
@@ -41,6 +42,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Vaari Backend", version="0.1", lifespan=lifespan)
 
 setup_error_handlers(app)
+app.add_middleware(RateLimitMiddleware)
 
 app.include_router(health_router, prefix="/api")
 app.include_router(auth_router, prefix="/api")

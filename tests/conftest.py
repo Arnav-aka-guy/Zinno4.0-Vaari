@@ -17,6 +17,18 @@ from app.main import app
 from app.db import override_db, get_db, Base
 
 
+@pytest.fixture(autouse=True)
+def _reset_rate_limits():
+    """Each test starts with empty rate-limit and lockout counters."""
+    from app.ratelimit import limiter, lockout
+
+    limiter.reset()
+    lockout.reset()
+    yield
+    limiter.reset()
+    lockout.reset()
+
+
 @pytest.fixture
 def temp_db():
     """Create a temporary SQLite database for test isolation."""
