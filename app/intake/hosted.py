@@ -130,8 +130,6 @@ class HostedVisionReader:
         model = str(getattr(self.settings, "vision_model", "") or "").strip()
         if not model:
             raise ReaderUnavailable("VAARI_VISION_MODEL is not set. Name a current Gemini vision model.")
-        if not model.startswith("gemini-") and not model.startswith("models/"):
-            model = f"gemini-{model}"
         api_key = os.environ.get("GEMINI_API_KEY", "").strip()
         if not api_key:
             raise ReaderUnavailable("GEMINI_API_KEY is not set (keep it in .env).")
