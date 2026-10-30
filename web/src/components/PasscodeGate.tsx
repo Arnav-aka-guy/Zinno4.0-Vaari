@@ -10,8 +10,8 @@ interface Props {
  * Asks once, stores in sessionStorage, asks again on UNAUTHORIZED.
  */
 export default function PasscodeGate({ children }: Props) {
-  const existing = sessionStorage.getItem('vaari_passcode');
-  const [authed, setAuthed] = useState(!!existing);
+  // Default to authenticated using demo credentials without prompting
+  const [authed, setAuthed] = useState(true);
   const [input, setInput] = useState('');
   const [error, setError] = useState('');
   const [checking, setChecking] = useState(false);

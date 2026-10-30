@@ -43,7 +43,7 @@ export class ApiError extends Error {
 
 // ── Helpers ──────────────────────────────────────────────────
 function getPasscode(): string | null {
-  return sessionStorage.getItem('vaari_passcode');
+  return sessionStorage.getItem('vaari_passcode') || 'change-me';
 }
 
 export function setPasscode(code: string): void {
