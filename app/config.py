@@ -31,6 +31,20 @@ class Settings:
         )
 
     @property
+    def secret_key(self) -> str:
+        """VAARI_SECRET_KEY signs login sessions. Required in production."""
+        return os.environ.get("VAARI_SECRET_KEY", "").strip()
+
+    @property
+    def session_hours(self) -> float:
+        return float(os.environ.get("VAARI_SESSION_HOURS", "12"))
+
+    @property
+    def auth_mode(self) -> str:
+        """'passcode' in development (shared passcode and accounts both work), 'accounts' in production."""
+        return "accounts" if self.is_production else "passcode"
+
+    @property
     def demo_passcode(self) -> str:
         return os.environ.get("VAARI_DEMO_PASSCODE", "change-me")
 

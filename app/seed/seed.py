@@ -335,7 +335,10 @@ def reset_db() -> dict[str, int]:
     print(f"  Scheduled:  {counts.get('scheduled')}")
     print(f"  Will miss:  {counts.get('will_miss')}")
     print(f"  Needs info: {counts.get('needs_info')}")
-    print(f"  Passcode:   {settings.demo_passcode} (set in .env)")
+    if settings.is_production:
+        print("  Sign in:    with a staff account (python tasks.py create-user)")
+    else:
+        print("  Passcode:   set in .env as VAARI_DEMO_PASSCODE (development only)")
 
     # Print driver paths
     with SessionFactory() as session:

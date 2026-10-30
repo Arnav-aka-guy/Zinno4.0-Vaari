@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
-from app.auth import require_passcode
+from app.auth import ROLE_OPERATOR, Principal, require_operator, require_staff
 from app.db import get_db
 from app.enums import MachineStatus, to_x100
 from app.errors import VaariError
@@ -20,7 +20,7 @@ router = APIRouter(prefix="/machines", tags=["machines"])
 def create_machine(
     payload: MachineIn,
     session: Session = Depends(get_db),
-    _passcode: str = Depends(require_passcode),
+    _principal: Principal = Depends(require_operator),
 ):
     home_centre = get_or_create_home_centre(session)
 
@@ -55,10 +55,15 @@ def create_machine(
 @router.get("", response_model=list[MachineOut])
 def list_machines(
     session: Session = Depends(get_db),
-    _passcode: str = Depends(require_passcode),
+    principal: Principal = Depends(require_staff),
 ):
     machines = session.query(Machine).order_by(Machine.id.asc()).all()
-    return [serialize_machine(m) for m in machines]
+    out = [serialize_machine(m) for m in machines]
+    if ROLE_OPERATOR not in principal.roles:
+        # Officers see the fleet but never the driver links.
+        for m in out:
+            m.driver_path = ""
+    return out
 
 
 @router.patch("/{id}", response_model=MachineOut)
@@ -66,7 +71,7 @@ def patch_machine(
     id: int,
     payload: MachinePatch,
     session: Session = Depends(get_db),
-    _passcode: str = Depends(require_passcode),
+    _principal: Principal = Depends(require_operator),
 ):
     machine = session.query(Machine).filter_by(id=id).first()
     if machine is None:

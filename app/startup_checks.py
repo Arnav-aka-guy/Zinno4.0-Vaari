@@ -9,8 +9,8 @@ from typing import Any
 
 from app.config import VALID_ENVS
 
-DEFAULT_PASSCODES = {"change-me", "changeme", "password", "vaari"}
-MIN_PASSCODE_LEN = 16
+DEFAULT_SECRETS = {"change-me", "changeme", "password", "vaari", "secret", "change-me-to-a-long-random-string"}
+MIN_SECRET_LEN = 32
 
 
 class UnsafeConfigError(RuntimeError):
@@ -38,14 +38,16 @@ def config_problems(s: Any) -> list[str]:
     if env != "production":
         return problems
 
-    passcode = (getattr(s, "demo_passcode", "") or "").strip()
-    if not passcode:
-        problems.append("VAARI_DEMO_PASSCODE is empty.")
-    elif passcode.lower() in DEFAULT_PASSCODES:
-        problems.append("VAARI_DEMO_PASSCODE is still a default value.")
-    elif len(passcode) < MIN_PASSCODE_LEN:
+    # In production staff sign in with accounts; the shared passcode is switched off.
+    # The secret that guards sign-in is VAARI_SECRET_KEY, which signs every session.
+    secret = (getattr(s, "secret_key", "") or "").strip()
+    if not secret:
+        problems.append("VAARI_SECRET_KEY is empty. Generate one with: python -c \"import secrets; print(secrets.token_urlsafe(48))\"")
+    elif secret.lower() in DEFAULT_SECRETS:
+        problems.append("VAARI_SECRET_KEY is still a default value.")
+    elif len(secret) < MIN_SECRET_LEN:
         problems.append(
-            f"VAARI_DEMO_PASSCODE is {len(passcode)} characters; production needs at least {MIN_PASSCODE_LEN}."
+            f"VAARI_SECRET_KEY is {len(secret)} characters; production needs at least {MIN_SECRET_LEN}."
         )
 
     if _hosted_reader_requested(s) and not getattr(s, "allow_hosted_reader_in_production", False):

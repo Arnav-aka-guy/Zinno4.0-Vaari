@@ -6,7 +6,8 @@
 export const ERROR_MESSAGES: Record<string, string> = {
   VALIDATION_ERROR: 'Some fields are invalid. Please check and try again.',
   NOT_FOUND: 'That item was not found.',
-  UNAUTHORIZED: 'Wrong passcode. Please re-enter it.',
+  UNAUTHORIZED: 'Please sign in again.',
+  FORBIDDEN: 'Your account cannot do this.',
   WRONG_SLOT: 'This action is not allowed for this slot.',
   INVALID_TRANSITION: 'This action is not allowed in the current state.',
   DUPLICATE_START: 'This job has already been started from another device.',

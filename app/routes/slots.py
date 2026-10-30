@@ -5,7 +5,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, File, Form, Header, Query, Response, UploadFile, status
 from sqlalchemy.orm import Session
 from app import clock
-from app.auth import require_passcode, verify_slot_auth
+from app.auth import ROLE_OPERATOR, Principal, get_optional_principal, get_slot_caller, require_operator, verify_slot_auth
 from app.config import settings
 from app.db import get_db
 from app.errors import VaariError
@@ -22,20 +22,22 @@ router = APIRouter(prefix="/slots", tags=["slots"])
 def list_slots(
     date: date | None = Query(None),
     machine_id: int | None = Query(None),
-    x_vaari_passcode: str | None = Header(None, alias="X-Vaari-Passcode"),
     x_vaari_machine_token: str | None = Header(None, alias="X-Vaari-Machine-Token"),
+    principal: Principal | None = Depends(get_optional_principal),
     session: Session = Depends(get_db),
 ):
-    # Auth: passcode (operator) or machine token (driver for that machine)
+    # Auth: an operator, or a machine token (driver for that machine)
     machine_for_token = None
-    if x_vaari_machine_token:
+    if principal is not None and ROLE_OPERATOR in principal.roles:
+        pass
+    elif x_vaari_machine_token:
         machine_for_token = (
             session.query(Machine).filter_by(link_token=x_vaari_machine_token).first()
         )
         if not machine_for_token:
             raise VaariError("UNAUTHORIZED", "Invalid machine token.", 401)
-    elif not x_vaari_passcode or x_vaari_passcode != settings.demo_passcode:
-        raise VaariError("UNAUTHORIZED", "Passcode or machine token required.", 401)
+    else:
+        raise VaariError("UNAUTHORIZED", "Operator sign-in or machine token required.", 401)
 
     query = session.query(Slot)
     if machine_for_token:
@@ -54,7 +56,7 @@ def list_slots(
 def get_slot_message(
     id: int,
     session: Session = Depends(get_db),
-    _passcode: str = Depends(require_passcode),
+    _principal: Principal = Depends(require_operator),
 ) -> dict[str, Any]:
     slot = session.query(Slot).filter_by(id=id).first()
     if slot is None:
@@ -96,7 +98,7 @@ def message_opened(
     id: int,
     payload: MessageOpenedIn,
     session: Session = Depends(get_db),
-    _passcode: str = Depends(require_passcode),
+    _principal: Principal = Depends(require_operator),
 ):
     slot = session.query(Slot).filter_by(id=id).first()
     if slot is None:
@@ -143,6 +145,7 @@ async def start_slot_endpoint(
     accuracy_m: float | None = Form(None),
     x_vaari_slot_token: str | None = Header(None, alias="X-Vaari-Slot-Token"),
     x_vaari_passcode: str | None = Header(None, alias="X-Vaari-Passcode"),
+    principal: Principal | None = Depends(get_slot_caller),
     session: Session = Depends(get_db),
 ):
     slot = session.query(Slot).filter_by(id=id).first()
@@ -150,7 +153,7 @@ async def start_slot_endpoint(
         raise VaariError("NOT_FOUND", "Slot not found.", 404)
 
     # 1. Auth check
-    verify_slot_auth(slot, x_vaari_slot_token, x_vaari_passcode)
+    verify_slot_auth(slot, x_vaari_slot_token, x_vaari_passcode, principal)
 
     # 2. Lifecycle start
     ev, pos_state = await start_slot(
@@ -193,6 +196,7 @@ async def done_slot_endpoint(
     service_code: str | None = Form(None),
     x_vaari_slot_token: str | None = Header(None, alias="X-Vaari-Slot-Token"),
     x_vaari_passcode: str | None = Header(None, alias="X-Vaari-Passcode"),
+    principal: Principal | None = Depends(get_slot_caller),
     session: Session = Depends(get_db),
 ):
     slot = session.query(Slot).filter_by(id=id).first()
@@ -200,7 +204,7 @@ async def done_slot_endpoint(
         raise VaariError("NOT_FOUND", "Slot not found.", 404)
 
     # 1. Auth check
-    verify_slot_auth(slot, x_vaari_slot_token, x_vaari_passcode)
+    verify_slot_auth(slot, x_vaari_slot_token, x_vaari_passcode, principal)
 
     # 2. Lifecycle done
     ev, record, pos_state = await done_slot(
@@ -243,13 +247,14 @@ def not_served_slot_endpoint(
     payload: NotServedIn,
     x_vaari_slot_token: str | None = Header(None, alias="X-Vaari-Slot-Token"),
     x_vaari_passcode: str | None = Header(None, alias="X-Vaari-Passcode"),
+    principal: Principal | None = Depends(get_slot_caller),
     session: Session = Depends(get_db),
 ):
     slot = session.query(Slot).filter_by(id=id).first()
     if slot is None:
         raise VaariError("NOT_FOUND", "Slot not found.", 404)
 
-    verify_slot_auth(slot, x_vaari_slot_token, x_vaari_passcode)
+    verify_slot_auth(slot, x_vaari_slot_token, x_vaari_passcode, principal)
 
     slot = not_served_slot(
         session=session,

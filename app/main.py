@@ -13,6 +13,7 @@ from app.db import Base, get_engine, get_session_factory
 from app.errors import setup_error_handlers
 import app.models  # ensure models are registered
 from app.routes.common import get_or_create_home_centre
+from app.routes.auth import router as auth_router
 from app.routes.dashboard import router as dashboard_router
 from app.routes.driver import router as driver_router
 from app.routes.health import router as health_router
@@ -42,6 +43,7 @@ app = FastAPI(title="Vaari Backend", version="0.1", lifespan=lifespan)
 setup_error_handlers(app)
 
 app.include_router(health_router, prefix="/api")
+app.include_router(auth_router, prefix="/api")
 app.include_router(requests_router, prefix="/api")
 app.include_router(machines_router, prefix="/api")
 app.include_router(plots_router, prefix="/api")

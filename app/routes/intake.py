@@ -9,7 +9,7 @@ from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from app import clock
-from app.auth import require_passcode
+from app.auth import Principal, require_operator, require_staff
 from app.config import settings
 from app.db import get_db
 from app.enums import ServiceType
@@ -143,7 +143,7 @@ def _serialize_intake_page(session: Session, page: IntakePage) -> dict[str, Any]
 async def upload_register_photo(
     photo: UploadFile | None = File(None),
     session: Session = Depends(get_db),
-    _passcode: str = Depends(require_passcode),
+    _principal: Principal = Depends(require_operator),
 ) -> dict[str, Any]:
     image_path, image_sha256, media_type = await _validate_and_save_register_photo(photo)
 
@@ -228,7 +228,7 @@ async def upload_register_photo(
 def get_intake_draft(
     id: int,
     session: Session = Depends(get_db),
-    _passcode: str = Depends(require_passcode),
+    _principal: Principal = Depends(require_operator),
 ) -> dict[str, Any]:
     page = session.query(IntakePage).filter_by(id=id).first()
     if page is None or page.status == "confirmed":
@@ -244,7 +244,7 @@ def get_intake_draft(
 def get_intake_image(
     id: int,
     session: Session = Depends(get_db),
-    _passcode: str = Depends(require_passcode),
+    _principal: Principal = Depends(require_operator),
 ):
     page = session.query(IntakePage).filter_by(id=id).first()
     if page is None:
@@ -268,7 +268,7 @@ def confirm_intake(
     id: int,
     payload: dict[str, Any],
     session: Session = Depends(get_db),
-    _passcode: str = Depends(require_passcode),
+    _principal: Principal = Depends(require_operator),
 ) -> dict[str, Any]:
     page = session.query(IntakePage).filter_by(id=id).first()
     if page is None or page.status == "confirmed":

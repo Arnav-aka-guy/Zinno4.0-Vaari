@@ -28,4 +28,6 @@ def get_health(session: Session = Depends(get_db)):
         "today": clock.today().isoformat(),
         "demo_clock": bool(settings.today),
         "version": "0.1",
+        "env": settings.env,
+        "auth": settings.auth_mode,
     }

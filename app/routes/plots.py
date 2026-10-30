@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 from app import clock
-from app.auth import require_passcode
+from app.auth import Principal, require_operator, require_staff
 from app.db import get_db
 from app.enums import to_x100
 from app.errors import VaariError
@@ -19,7 +19,7 @@ router = APIRouter(prefix="/plots", tags=["plots"])
 def create_plot(
     payload: PlotIn,
     session: Session = Depends(get_db),
-    _passcode: str = Depends(require_passcode),
+    _principal: Principal = Depends(require_operator),
 ):
     farmer = session.query(Farmer).filter_by(phone=payload.farmer_phone).first()
     if farmer is None:
@@ -108,7 +108,7 @@ def create_plot(
 @router.get("", response_model=list[PlotOut])
 def list_plots(
     session: Session = Depends(get_db),
-    _passcode: str = Depends(require_passcode),
+    _principal: Principal = Depends(require_operator),
 ):
     plots = session.query(Plot).order_by(Plot.id.asc()).all()
     return [serialize_plot(p) for p in plots]
@@ -118,7 +118,7 @@ def list_plots(
 def get_plot(
     id: int,
     session: Session = Depends(get_db),
-    _passcode: str = Depends(require_passcode),
+    _principal: Principal = Depends(require_operator),
 ):
     plot = session.query(Plot).filter_by(id=id).first()
     if plot is None:

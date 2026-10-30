@@ -392,12 +392,34 @@ This section records every change made for the one-centre pilot. Each one is add
 | --- | --- | --- |
 | `VAARI_ENV` | `development` | `development` or `production`. Production refuses to start with unsafe settings (see 15.2) |
 | `VAARI_ALLOW_HOSTED_READER_IN_PRODUCTION` | `false` | Explicit override. Without it, production refuses to start while any hosted reader is enabled |
+| `VAARI_SECRET_KEY` | empty | Signs login sessions. Required in production, at least 32 characters. In development an empty value means a random key per process |
+| `VAARI_SESSION_HOURS` | `12` | How long a sign-in lasts |
 
 ### 15.2 Production start-up checks
 
 With `VAARI_ENV=production` the app refuses to start, and lists every problem, when:
 
-- `VAARI_DEMO_PASSCODE` is empty, a default value (`change-me` and similar), or shorter than 16 characters;
+- `VAARI_SECRET_KEY` is empty, a default value (`change-me` and similar), or shorter than 32 characters. (Item A1 first checked `VAARI_DEMO_PASSCODE` with a 16-character minimum. Item A2 switches the shared passcode off in production, so the check moved to the secret that now guards every sign-in. The passcode's value no longer matters in production);
 - a hosted reader is enabled (`VAARI_READER` other than `mock`, or `VAARI_ALLOW_HOSTED_READER=true`) and `VAARI_ALLOW_HOSTED_READER_IN_PRODUCTION` is not `true`.
 
 `python tasks.py check-config` prints the same list without starting the server. Any other `VAARI_ENV` value is refused in every mode.
+
+### 15.3 Accounts, roles and sessions (A2)
+
+- **Tables.** `user_account` — id · username str unique (stored lower-case) · password_hash str (argon2id) · role str (`operator` | `officer`) · active bool · created_at · last_login_at null. `auth_session` — id · sid_sha256 str unique · user_id fk · created_at · expires_at · revoked_at null. Only a SHA-256 of the session id is stored.
+- **Session token.** `v1.<sid>.<expires_unix>.<hmac>`, HMAC-SHA256 with `VAARI_SECRET_KEY`. Sent as `Authorization: Bearer <token>`. Valid only if the signature matches, it has not expired, the session row is not revoked, and the account is active.
+- **Shared passcode.** `X-Vaari-Passcode` works in development only, where it acts with both roles. In production it is always refused with 401.
+- **Roles.**
+
+| Routes | operator | officer |
+| --- | --- | --- |
+| Requests, plots, intake, schedule run, `GET /api/schedule`, `GET /api/slots`, slot messages, slot actions, machine create and patch | yes | no (403 `FORBIDDEN`) |
+| `GET /api/dashboard/summary`, `GET /api/dashboard/usage.csv`, `GET /api/schedule/will-miss`, `GET /api/machines` | yes | yes. Officers get `driver_path: ""` |
+
+- **New routes.** `POST /api/auth/login` `{username, password}` → `{token, token_type: "bearer", expires_at, user: {username, role}}`, or 401 `UNAUTHORIZED` "Wrong username or password." (same answer for an unknown user, a wrong password and a disabled account). `POST /api/auth/logout` (Bearer) → 204 and the session is revoked. `GET /api/auth/me` → `{username, roles, via}`.
+- **New error code.** `FORBIDDEN` 403: signed in, but the role cannot use the route.
+- **Health.** `GET /api/health` adds `env` (`development` | `production`) and `auth` (`passcode` | `accounts`).
+- **Slot actions.** `start`, `done` and `not-served` answer 401 before looking up the slot when the caller sent no credential at all (it used to be 404 for an unknown slot id).
+- **event_log.** Rows written by a signed-in account name it: `operator:asha`. Passcode actions stay `operator`.
+- **Commands.** `python tasks.py create-user --username NAME --role operator|officer [--password-stdin]` (passwords at least 12 characters), `disable-user --username NAME` (also signs out every session), `list-users`, `openapi` (regenerates `docs/openapi.json`).
+- **Frontend.** When `health.auth` is `accounts`, Desk, Intake and Officer show a username and password form, keep the session token in `sessionStorage`, and show "Sign out". Officer opens for `officer` or `operator`; Desk and Intake for `operator`. In development the screens open with the demo passcode as before.

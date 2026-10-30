@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate, NavLink } from 'react-router-dom';
 import PasscodeGate from './components/PasscodeGate';
+import SignOutButton from './components/SignOutButton';
 import DeskPage from './pages/DeskPage';
 import DriverPage from './pages/DriverPage';
 import OfficerPage from './pages/OfficerPage';
@@ -53,6 +54,7 @@ export default function App() {
               >
                 Record View
               </NavLink>
+              <SignOutButton />
             </nav>
           </div>
         </header>
@@ -80,7 +82,7 @@ export default function App() {
             <Route
               path="/officer"
               element={
-                <PasscodeGate>
+                <PasscodeGate roles={['officer', 'operator']}>
                   <OfficerPage />
                 </PasscodeGate>
               }

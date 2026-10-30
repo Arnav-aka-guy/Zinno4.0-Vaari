@@ -17,6 +17,22 @@ export interface Health {
   today: string;
   demo_clock: boolean;
   version: string;
+  env?: 'development' | 'production';
+  auth?: 'passcode' | 'accounts';
+}
+
+// ── Auth (pilot v0.2) ────────────────────────────────────────
+export interface LoginResult {
+  token: string;
+  token_type: 'bearer';
+  expires_at: string;
+  user: { username: string; role: 'operator' | 'officer' };
+}
+
+export interface MeResult {
+  username: string | null;
+  roles: string[];
+  via: 'passcode' | 'session';
 }
 
 // ── RequestOut ───────────────────────────────────────────────

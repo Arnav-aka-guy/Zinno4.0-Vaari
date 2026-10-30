@@ -303,6 +303,19 @@ def task_check_config() -> int:
     return 0
 
 
+def task_openapi() -> int:
+    """Regenerate docs/openapi.json from the live app (LF line endings)."""
+    import json
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    from app.main import app
+
+    out = ROOT / "docs" / "openapi.json"
+    out.write_bytes((json.dumps(app.openapi(), indent=2, ensure_ascii=False) + "\n").encode("utf-8"))
+    print(f"Wrote {out.relative_to(ROOT)} ({len(app.openapi()['paths'])} paths)")
+    return 0
+
+
 def task_seed() -> int:
     """Load seed data into an existing database."""
     py = get_venv_python()
@@ -353,13 +366,129 @@ def task_screenshots() -> int:
     return task_e2e(["e2e/screenshots.spec.ts"])
 
 
-def task_e2e(args: list[str]) -> int:
-    """Run Playwright end-to-end tests against a freshly reset temporary database in serve mode."""
+E2E_PRODUCTION_SPEC = "e2e/production_login.spec.ts"
+E2E_USERS = {
+    # Synthetic test accounts, created only inside the temporary e2e database.
+    "e2e-operator": ("operator", "e2e-operator-password-1"),
+    "e2e-officer": ("officer", "e2e-officer-password-1"),
+}
+
+
+def _free_port(preferred: int = 8000) -> int:
     import socket
+
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        try:
+            s.bind(("127.0.0.1", preferred))
+            return preferred
+        except OSError:
+            pass
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s2:
+        s2.bind(("127.0.0.1", 0))
+        return s2.getsockname()[1]
+
+
+def _stop(proc: subprocess.Popen) -> None:
+    if os.name == "nt":
+        subprocess.run(
+            ["taskkill", "/F", "/T", "/PID", str(proc.pid)],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+    else:
+        proc.terminate()
+        try:
+            proc.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+
+
+def _run_e2e_pass(mode: str, spec_args: list[str]) -> int:
+    """Reset a temporary database, start the server in `mode`, run Playwright, stop the server."""
     import tempfile
     import time
     import urllib.request
 
+    port = _free_port()
+    temp_dir = tempfile.TemporaryDirectory()
+    temp_path = Path(temp_dir.name)
+    data_dir = temp_path / "data"
+    data_dir.mkdir(parents=True, exist_ok=True)
+
+    env = os.environ.copy()
+    env["VAARI_DB_PATH"] = str(temp_path / "vaari_e2e.sqlite")
+    env["VAARI_DATA_DIR"] = str(data_dir)
+    env["VAARI_DEMO_PASSCODE"] = "change-me"
+    env["VAARI_PUBLIC_BASE_URL"] = f"http://127.0.0.1:{port}"
+    env["VAARI_READER"] = "mock"
+    env["VAARI_ALLOW_HOSTED_READER"] = "false"
+    if mode == "production":
+        import secrets
+
+        env["VAARI_ENV"] = "production"
+        env["VAARI_SECRET_KEY"] = secrets.token_urlsafe(48)
+    else:
+        env["VAARI_ENV"] = "development"
+
+    py = get_venv_python()
+    try:
+        print(f"[{mode}] Initializing temporary database...")
+        ret = run_cmd([str(py), "-m", "app.seed.seed", "--reset"], env=env)
+        if ret != 0:
+            print("Failed to initialize temporary database.")
+            return ret
+        if mode == "production":
+            for username, (role, password) in E2E_USERS.items():
+                res = subprocess.run(
+                    [str(py), "tasks.py", "create-user", "--username", username, "--role", role, "--password-stdin"],
+                    cwd=ROOT, env=env, input=password + "\n", text=True,
+                )
+                if res.returncode != 0:
+                    return res.returncode
+
+        print(f"[{mode}] Starting test server on http://127.0.0.1:{port}...")
+        server_proc = subprocess.Popen(
+            [str(py), "-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", str(port)],
+            cwd=ROOT,
+            env=env,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        try:
+            ready = False
+            t0 = time.time()
+            while time.time() - t0 < 20:
+                try:
+                    with urllib.request.urlopen(f"http://127.0.0.1:{port}/api/health", timeout=1) as resp:
+                        if resp.status == 200:
+                            ready = True
+                            break
+                except Exception:
+                    time.sleep(0.2)
+            if not ready:
+                print("Test server failed to start within 20s.")
+                return 1
+
+            print(f"[{mode}] Server ready! Running Playwright tests...")
+            playwright_env = env.copy()
+            playwright_env["BASE_URL"] = f"http://127.0.0.1:{port}"
+            playwright_env["VAARI_E2E_MODE"] = mode
+            npx_cmd = "npx.cmd" if os.name == "nt" else "npx"
+            return run_cmd([npx_cmd, "playwright", "test"] + spec_args, env=playwright_env, cwd=ROOT / "web")
+        finally:
+            print(f"[{mode}] Stopping test server...")
+            _stop(server_proc)
+    finally:
+        temp_dir.cleanup()
+
+
+def task_e2e(args: list[str]) -> int:
+    """Run Playwright end-to-end tests against freshly reset temporary databases.
+
+    With no arguments: a development-mode pass (every spec) and then a
+    production-mode pass (sign-in with accounts). With arguments, only a
+    development pass with those Playwright arguments.
+    """
     print("Building web application for serve mode...")
     task_build_web()
 
@@ -376,94 +505,12 @@ def task_e2e(args: list[str]) -> int:
         done_fix.write_bytes(done_jpg)
         reg_fix.write_bytes(reg_jpg)
 
-    port = 8000
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        try:
-            s.bind(("127.0.0.1", port))
-        except OSError:
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s2:
-                s2.bind(("127.0.0.1", 0))
-                port = s2.getsockname()[1]
-
-    temp_dir = tempfile.TemporaryDirectory()
-    temp_path = Path(temp_dir.name)
-    db_path = temp_path / "vaari_e2e.sqlite"
-    data_dir = temp_path / "data"
-    data_dir.mkdir(parents=True, exist_ok=True)
-
-    env = os.environ.copy()
-    env["VAARI_DB_PATH"] = str(db_path)
-    env["VAARI_DATA_DIR"] = str(data_dir)
-    env["VAARI_DEMO_PASSCODE"] = "change-me"
-    env["VAARI_PUBLIC_BASE_URL"] = f"http://127.0.0.1:{port}"
-    env["VAARI_READER"] = "mock"
-
-    py = get_venv_python()
-    print(f"Initializing temporary database at {db_path}...")
-    reset_ret = run_cmd([str(py), "-m", "app.seed.seed", "--reset"], env=env)
-    if reset_ret != 0:
-        print("Failed to initialize temporary database.")
-        temp_dir.cleanup()
-        return reset_ret
-
-    print(f"Starting test server on http://127.0.0.1:{port}...")
-    server_proc = subprocess.Popen(
-        [str(py), "-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", str(port)],
-        cwd=ROOT,
-        env=env,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-    )
-
-    health_url = f"http://127.0.0.1:{port}/api/health"
-    ready = False
-    t0 = time.time()
-    while time.time() - t0 < 20:
-        try:
-            with urllib.request.urlopen(health_url, timeout=1) as resp:
-                if resp.status == 200:
-                    ready = True
-                    break
-        except Exception:
-            time.sleep(0.2)
-
-    if not ready:
-        print("Test server failed to start within 20s.")
-        if os.name == "nt":
-            subprocess.run(
-                ["taskkill", "/F", "/T", "/PID", str(server_proc.pid)],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-            )
-        else:
-            server_proc.terminate()
-        temp_dir.cleanup()
-        return 1
-
-    print("Server ready! Running Playwright tests...")
-    playwright_env = env.copy()
-    playwright_env["BASE_URL"] = f"http://127.0.0.1:{port}"
-    npx_cmd = "npx.cmd" if os.name == "nt" else "npx"
-    web_dir = ROOT / "web"
-    cmd = [npx_cmd, "playwright", "test"] + args
-    exit_code = run_cmd(cmd, env=playwright_env, cwd=web_dir)
-
-    print("Stopping test server...")
-    if os.name == "nt":
-        subprocess.run(
-            ["taskkill", "/F", "/T", "/PID", str(server_proc.pid)],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
-    else:
-        server_proc.terminate()
-        try:
-            server_proc.wait(timeout=5)
-        except subprocess.TimeoutExpired:
-            server_proc.kill()
-
-    temp_dir.cleanup()
-    return exit_code
+    dev_code = _run_e2e_pass("development", args)
+    if args:
+        return dev_code
+    prod_code = _run_e2e_pass("production", [E2E_PRODUCTION_SPEC])
+    print(f"e2e summary: development pass exit {dev_code}, production pass exit {prod_code}")
+    return dev_code or prod_code
 
 
 def main():
@@ -471,7 +518,8 @@ def main():
         print("Usage: python tasks.py <task> [args]")
         print(
             "Available tasks: setup, dev, test, seed, reset, smoke, serve, tunnel, "
-            "build-web, e2e, reader-eval, purge-images, screenshots, check-config"
+            "build-web, e2e, reader-eval, purge-images, screenshots, check-config, "
+            "create-user, disable-user, list-users, openapi"
         )
         sys.exit(1)
 
@@ -502,6 +550,13 @@ def main():
         sys.exit(task_reader_eval())
     elif task == "purge-images":
         sys.exit(task_purge_images(extra_args))
+    elif task in ("create-user", "disable-user", "list-users"):
+        if str(ROOT) not in sys.path:
+            sys.path.insert(0, str(ROOT))
+        from app.cli_users import main as users_main
+        sys.exit(users_main([task] + extra_args))
+    elif task == "openapi":
+        sys.exit(task_openapi())
     elif task == "check-config":
         sys.exit(task_check_config())
     elif task == "screenshots":
