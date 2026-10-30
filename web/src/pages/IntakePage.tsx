@@ -14,7 +14,8 @@ import {
 } from '../api';
 import { triggerReauth } from '../components/PasscodeGate';
 import { friendlyError } from '../errors';
-import type { IntakeOut, IntakeConfirmError } from '../types';
+import type { Health, IntakeOut, IntakeConfirmError } from '../types';
+import ReaderBanner from '../components/ReaderBanner';
 
 const LOW_CONF_THRESHOLD = 0.8;
 
@@ -87,7 +88,8 @@ export default function IntakePage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  const [readerMode, setReaderMode] = useState<string>('mock');
+  const [, setReaderMode] = useState<string>('mock');
+  const [health, setHealth] = useState<Health | null>(null);
   const [villages, setVillages] = useState<string[]>([
     'Pind Kalan',
     'Bhucho Khurd',
@@ -120,7 +122,10 @@ export default function IntakePage() {
   // Load initial health & villages
   useEffect(() => {
     getHealth()
-      .then((h) => setReaderMode(h.reader))
+      .then((h) => {
+        setReaderMode(h.reader);
+        setHealth(h);
+      })
       .catch(() => {});
     getRequests()
       .then((reqs) => {
@@ -366,19 +371,8 @@ export default function IntakePage() {
         </div>
       </div>
 
-      {/* 1. Always-visible Privacy Warning Banner */}
-      <div
-        className="outcome-banner outcome-warning"
-        id="intake-privacy-banner"
-        style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}
-      >
-        <span>
-          <strong>Privacy Rule:</strong> Only synthetic pages, or pages with the phone column covered. No real register page may go to a hosted model.
-        </span>
-        {(readerMode === 'mock' || draft?.reader === 'mock') && (
-          <Badge name="reader: mock" id="intake-mock-badge" />
-        )}
-      </div>
+      {/* 1. Always-visible banner: which reader, and where photos go */}
+      <ReaderBanner health={health} draftReader={draft?.reader ?? null} />
 
       {/* 2. File / Camera Upload Input */}
       <div className="card new-request-card" id="intake-upload-box">

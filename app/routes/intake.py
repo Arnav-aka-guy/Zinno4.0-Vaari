@@ -102,9 +102,15 @@ def _serialize_intake_page(session: Session, page: IntakePage) -> dict[str, Any]
         .order_by(RegisterDraft.row_no.asc())
         .all()
     )
+    reader_name_for_page, third_party = {
+        "hosted": ("gemini_demo", True),
+        "custom": ("custom", False),
+    }.get(page.reader, (page.reader, False))
     return {
         "intake_id": page.id,
         "reader": page.reader,
+        "reader_name": reader_name_for_page,
+        "third_party": third_party,
         "latency_ms": page.latency_ms,
         "status": page.status,
         "rows": [

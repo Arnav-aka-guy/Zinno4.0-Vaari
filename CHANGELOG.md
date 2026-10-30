@@ -18,6 +18,7 @@ All notable changes are recorded here. The format follows Keep a Changelog, and 
 - **C11 CI**: ruff, pip-audit, npm audit, Playwright e2e and a Docker build-and-smoke job; fixed a scheduler NameError ruff found.
 - **R1 Reader interface**: `mock`, `gemini_demo` and a `custom` stub behind `RegisterReader`; no hard-coded model names; key in a header; Anthropic path removed.
 - **R2 Reader probe**: synthetic start-up probe of a remote reader; provider, model and latency in `/api/health`.
+- **R3 Intake banner**: always names the reader in use and says when photos go to a third party.
 
 ### Polish & Hardening Pass (29 Oct 2026)
 - **OpenAPI & Freshness Enforcement**: Regenerated `docs/openapi.json` from live application (`app.openapi()`) with LF line endings containing all 25 API paths (including `/api/intake/*` and `/api/dashboard/usage.csv`), and added an automated drift test `tests/api/test_openapi_freshness.py` that fails if committed schema is out of date.

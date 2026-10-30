@@ -19,6 +19,22 @@ export interface Health {
   version: string;
   env?: 'development' | 'production';
   auth?: 'passcode' | 'accounts';
+  reader_detail?: ReaderDetail;
+}
+
+export interface ReaderDetail {
+  name: 'mock' | 'gemini_demo' | 'custom' | string;
+  kind: string;
+  provider: string | null;
+  model: string | null;
+  third_party: boolean;
+  demo_only: boolean;
+  probe: {
+    status: 'not_run' | 'pending' | 'ok' | 'failed';
+    latency_ms?: number;
+    checked_at?: string;
+    error?: string;
+  };
 }
 
 // ── Auth (pilot v0.2) ────────────────────────────────────────
@@ -297,6 +313,8 @@ export interface IntakeRow {
 export interface IntakeOut {
   intake_id: number;
   reader: string;
+  reader_name?: string;
+  third_party?: boolean;
   latency_ms: number | null;
   status: string;
   rows: IntakeRow[];
