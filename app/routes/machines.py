@@ -11,7 +11,7 @@ from app.models import Machine, Request, Slot
 from app.routes.common import get_or_create_home_centre, serialize_machine
 from app.schemas import MachineIn, MachinePatch, MachineOut
 from app.scheduler.service import run_for_centre
-from app.tokens import new_token
+from app.tokens import driver_link_expiry, new_token
 
 router = APIRouter(prefix="/machines", tags=["machines"])
 
@@ -35,6 +35,7 @@ def create_machine(
         active_to=payload.active_to,
         status="active",
         link_token=new_token(),
+        link_expires_at=driver_link_expiry(),
     )
     session.add(machine)
     session.flush()
@@ -127,4 +128,55 @@ def patch_machine(
     )
     session.commit()
 
+    return serialize_machine(machine)
+
+
+@router.post("/{id}/link/rotate", response_model=MachineOut)
+def rotate_driver_link(
+    id: int,
+    session: Session = Depends(get_db),
+    _principal: Principal = Depends(require_operator),
+):
+    """Issue a new driver link. The old link, and the slot links it handed out, stop working."""
+    machine = session.query(Machine).filter_by(id=id).first()
+    if machine is None:
+        raise VaariError("NOT_FOUND", "Machine not found.", 404)
+    machine.link_token = new_token()
+    machine.link_expires_at = driver_link_expiry()
+    machine.link_revoked_at = None
+    open_slots = (
+        session.query(Slot)
+        .filter(Slot.machine_id == machine.id, Slot.status.in_(["scheduled", "in_progress"]))
+        .all()
+    )
+    for s in open_slots:
+        s.link_token = new_token()
+    log_event(
+        session=session,
+        actor="operator",
+        entity="machine",
+        entity_id=machine.id,
+        event="driver_link_rotated",
+        payload={"slot_links_rotated": len(open_slots)},
+    )
+    session.commit()
+    return serialize_machine(machine)
+
+
+@router.post("/{id}/link/revoke", response_model=MachineOut)
+def revoke_driver_link(
+    id: int,
+    session: Session = Depends(get_db),
+    _principal: Principal = Depends(require_operator),
+):
+    """Turn the driver link off now (for a lost phone or a driver who left)."""
+    machine = session.query(Machine).filter_by(id=id).first()
+    if machine is None:
+        raise VaariError("NOT_FOUND", "Machine not found.", 404)
+    if machine.link_revoked_at is None:
+        from app import clock
+
+        machine.link_revoked_at = clock.now_utc()
+        log_event(session=session, actor="operator", entity="machine", entity_id=machine.id, event="driver_link_revoked")
+    session.commit()
     return serialize_machine(machine)

@@ -33,7 +33,7 @@ from app.event_log import log_event
 from app.models import Centre, Farmer, Machine, Plot, Request, Village
 from app.scheduler.dates import compute_dates
 from app.scheduler.service import run_for_centre
-from app.tokens import new_token
+from app.tokens import driver_link_expiry, new_token
 
 
 def load_villages(session: Session, centre_lat: float, centre_lon: float) -> dict[str, Village]:
@@ -124,6 +124,7 @@ def seed_data(session: Session) -> dict[str, int]:
                 active_to=None,
                 status="active",
                 link_token=new_token(),
+                link_expires_at=driver_link_expiry(),
             )
             session.add(m)
     session.flush()

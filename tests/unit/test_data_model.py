@@ -16,6 +16,7 @@ EXPECTED_TABLES = {
     "machine": {
         "id", "centre_id", "name", "type", "service_types", "capacity_acres_x100",
         "implement_width_m", "active_from", "active_to", "status", "link_token",
+        "link_expires_at", "link_revoked_at",  # pilot v0.2 (A4)
     },
     "farmer": {
         "id", "phone", "name", "language", "consent_service", "consent_evidence",
@@ -52,6 +53,7 @@ EXPECTED_TABLES = {
     "service_record": {
         "id", "slot_id", "token", "outcome", "on_time", "record_hash",
         "hash_version", "generated_at",
+        "token_expires_at", "token_revoked_at",  # pilot v0.2 (A4)
     },
     "message_log": {
         "id", "slot_id", "farmer_id", "channel", "template", "body", "status", "created_at",

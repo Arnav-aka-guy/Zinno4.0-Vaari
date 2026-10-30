@@ -87,6 +87,16 @@ export interface MachineOut {
   active_from: string | null;
   active_to: string | null;
   driver_path: string;
+  driver_link_status?: 'active' | 'expired' | 'revoked';
+  driver_link_expires_at?: string | null;
+}
+
+export interface RecordLinkOut {
+  slot_id: number;
+  record_token: string;
+  record_url: string;
+  status: 'active' | 'expired' | 'revoked';
+  expires_at: string | null;
 }
 
 // ── SlotOut ──────────────────────────────────────────────────

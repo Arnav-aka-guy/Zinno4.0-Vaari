@@ -69,6 +69,9 @@ class Machine(Base):
     active_to = Column(Date, nullable=True)
     status = Column(String, nullable=False, default="active")
     link_token = Column(String, unique=True, nullable=False)
+    # Pilot v0.2: driver links expire and can be turned off. Null expiry = no expiry (older rows).
+    link_expires_at = Column(DateTime, nullable=True)
+    link_revoked_at = Column(DateTime, nullable=True)
 
 
 class Farmer(Base):
@@ -210,6 +213,9 @@ class ServiceRecord(Base):
     record_hash = Column(String, nullable=False)
     hash_version = Column(String, nullable=False, default="v1")
     generated_at = Column(DateTime, nullable=False)
+    # Pilot v0.2: record links expire and can be turned off. Not part of the record hash.
+    token_expires_at = Column(DateTime, nullable=True)
+    token_revoked_at = Column(DateTime, nullable=True)
 
 
 class MessageLog(Base):

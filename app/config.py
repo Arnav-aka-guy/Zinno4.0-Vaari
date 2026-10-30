@@ -69,6 +69,16 @@ class Settings:
         return os.environ.get("VAARI_TRUST_PROXY", "false").strip().lower() in ("true", "1")
 
     @property
+    def driver_link_days(self) -> float:
+        """Days a new driver link (machine token) stays valid."""
+        return float(os.environ.get("VAARI_DRIVER_LINK_DAYS", "30"))
+
+    @property
+    def record_link_days(self) -> float:
+        """Days a new service-record link stays valid."""
+        return float(os.environ.get("VAARI_RECORD_LINK_DAYS", "365"))
+
+    @property
     def demo_passcode(self) -> str:
         return os.environ.get("VAARI_DEMO_PASSCODE", "change-me")
 

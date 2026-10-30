@@ -8,6 +8,7 @@ All notable changes are recorded here. The format follows Keep a Changelog, and 
 - **A1 Production mode**: `VAARI_ENV=production` refuses to start with unsafe settings; new `python tasks.py check-config`.
 - **A2 Accounts and roles**: operator and officer accounts (argon2id), signed expiring sessions, role checks on every protected route, `create-user` / `disable-user` / `list-users`, sign-in screen in production, production-mode Playwright pass.
 - **A3 Rate limits and lockout**: per-address limits on sign-in and photo uploads (checked before the body is read), per-username lockout after repeated wrong passwords, 429 `RATE_LIMITED`.
+- **A4 Link expiry and revocation**: driver and record links expire; operators rotate or turn off driver links and turn off or reissue record links; 410 `LINK_EXPIRED`.
 
 ### Polish & Hardening Pass (29 Oct 2026)
 - **OpenAPI & Freshness Enforcement**: Regenerated `docs/openapi.json` from live application (`app.openapi()`) with LF line endings containing all 25 API paths (including `/api/intake/*` and `/api/dashboard/usage.csv`), and added an automated drift test `tests/api/test_openapi_freshness.py` that fails if committed schema is out of date.

@@ -176,6 +176,9 @@ class MachineOut(BaseModel):
     active_from: date | None = None
     active_to: date | None = None
     driver_path: str
+    # Pilot v0.2 (additive)
+    driver_link_status: str = "active"  # active | expired | revoked
+    driver_link_expires_at: str | None = None
 
 
 # --- Plot Schemas ---

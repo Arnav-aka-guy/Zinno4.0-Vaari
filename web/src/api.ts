@@ -16,6 +16,7 @@ import type {
   LoginResult,
   MachineOut,
   MeResult,
+  RecordLinkOut,
   PatchRequestBody,
   RecordOut,
   RecordVerify,
@@ -209,6 +210,35 @@ export function patchMachine(
 }
 
 // ── Schedule (passcode) ──────────────────────────────────────
+// ── Link expiry and revocation (pilot v0.2) ─────────────────
+export function rotateDriverLink(machineId: number): Promise<MachineOut> {
+  return request<MachineOut>(`/api/machines/${machineId}/link/rotate`, {
+    method: 'POST',
+    headers: { ...authHeaders('passcode') },
+  });
+}
+
+export function revokeDriverLink(machineId: number): Promise<MachineOut> {
+  return request<MachineOut>(`/api/machines/${machineId}/link/revoke`, {
+    method: 'POST',
+    headers: { ...authHeaders('passcode') },
+  });
+}
+
+export function revokeRecordLink(slotId: number): Promise<RecordLinkOut> {
+  return request<RecordLinkOut>(`/api/slots/${slotId}/record/revoke`, {
+    method: 'POST',
+    headers: { ...authHeaders('passcode') },
+  });
+}
+
+export function reissueRecordLink(slotId: number): Promise<RecordLinkOut> {
+  return request<RecordLinkOut>(`/api/slots/${slotId}/record/reissue`, {
+    method: 'POST',
+    headers: { ...authHeaders('passcode') },
+  });
+}
+
 export function runSchedule(): Promise<ScheduleRunResult> {
   return request<ScheduleRunResult>('/api/schedule/run', {
     method: 'POST',

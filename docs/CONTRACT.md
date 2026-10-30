@@ -398,6 +398,8 @@ This section records every change made for the one-centre pilot. Each one is add
 | `VAARI_LOGIN_LOCKOUT_FAILURES` | `5` | Wrong passwords for one username (within the lockout window) before it is locked |
 | `VAARI_LOGIN_LOCKOUT_MINUTES` | `15` | Lockout window and length |
 | `VAARI_UPLOAD_RATE_PER_MIN` | `30` | Photo uploads (`register-photo`, slot `start`, slot `done`) per client address per minute |
+| `VAARI_DRIVER_LINK_DAYS` | `30` | Lifetime of a new driver link (machine token) |
+| `VAARI_RECORD_LINK_DAYS` | `365` | Lifetime of a new service-record link |
 | `VAARI_TRUST_PROXY` | `false` | Take the client address from the first `X-Forwarded-For` value. Turn on only behind your own reverse proxy |
 
 ### 15.2 Production start-up checks
@@ -435,3 +437,11 @@ With `VAARI_ENV=production` the app refuses to start, and lists every problem, w
 - **Per address.** `POST /api/auth/login` and the three photo uploads are counted per client address in a 60-second sliding window, checked in middleware before the body is read.
 - **Per username.** After `VAARI_LOGIN_LOCKOUT_FAILURES` wrong passwords within the window, the username is locked for `VAARI_LOGIN_LOCKOUT_MINUTES`, even for the right password. Unknown usernames get the same answer, so the response does not reveal which accounts exist. A successful sign-in clears the count. Locking a real account writes `event_log` `login_locked`.
 - **Scope.** Counts live in memory in one server process and reset on restart. That fits one server at one centre.
+
+### 15.5 Link expiry and revocation (A4)
+
+- **Columns.** `machine.link_expires_at`, `machine.link_revoked_at`, `service_record.token_expires_at`, `service_record.token_revoked_at` (all datetime, null). A null expiry means "does not expire", so rows made before v0.2 keep working until rotated. New machines and new records always get an expiry.
+- **New error code.** `LINK_EXPIRED` 410 with `details.reason` `expired` or `revoked`. Returned by `GET /api/driver/{machine_token}`, `GET /api/slots` with `X-Vaari-Machine-Token`, slot actions made with a slot token whose machine link is expired or off, `GET /api/records/{token}` and `.../verify`. Operators can still act on any slot.
+- **New routes (operator).** `POST /api/machines/{id}/link/rotate` → `MachineOut` with a new token and expiry; the old link and every slot token it handed out for `scheduled` or `in_progress` slots stop working. `POST /api/machines/{id}/link/revoke` → `MachineOut`, link off now. `POST /api/slots/{id}/record/revoke` and `POST /api/slots/{id}/record/reissue` → `{slot_id, record_token, record_url, status, expires_at}`. Turning off or reissuing a record link never changes the record or its hash (the token is not hashed).
+- **MachineOut** adds `driver_link_status` (`active` | `expired` | `revoked`) and `driver_link_expires_at`.
+- **event_log.** `driver_link_rotated`, `driver_link_revoked`, `link_revoked`, `link_reissued`.

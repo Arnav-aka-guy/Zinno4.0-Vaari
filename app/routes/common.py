@@ -5,6 +5,7 @@ from app import clock
 from app.config import settings
 from app.enums import from_x100
 from app.models import Centre, Farmer, Machine, Plot, Request, ServiceRecord, Slot
+from app.tokens import link_state
 from app.schemas import (
     ExplanationBrief,
     FarmerBrief,
@@ -95,6 +96,8 @@ def serialize_machine(machine: Machine) -> MachineOut:
         active_from=machine.active_from,
         active_to=machine.active_to,
         driver_path=f"/driver/{machine.link_token}",
+        driver_link_status=link_state(machine.link_expires_at, machine.link_revoked_at),
+        driver_link_expires_at=clock.iso_z(machine.link_expires_at) if machine.link_expires_at else None,
     )
 
 
