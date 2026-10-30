@@ -188,6 +188,11 @@ class Settings:
         return os.environ.get("VAARI_VISION_MODEL", "")
 
     @property
+    def reader_probe(self) -> bool:
+        """Send one synthetic image through a remote reader at start-up (default on)."""
+        return os.environ.get("VAARI_READER_PROBE", "true").strip().lower() in ("true", "1")
+
+    @property
     def custom_reader_url(self) -> str:
         """Endpoint of a future custom reader (VAARI_READER=custom)."""
         return os.environ.get("VAARI_CUSTOM_READER_URL", "").strip()

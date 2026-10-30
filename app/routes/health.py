@@ -12,6 +12,18 @@ from app.routes.intake import get_reader_status_for_health
 router = APIRouter(tags=["health"])
 
 
+def reader_detail() -> dict:
+    """Which reader is in use, who receives the images, and the start-up probe's result."""
+    from dataclasses import asdict
+
+    from app.intake.probe import probe_state
+    from app.intake.reader import describe_reader
+
+    info = asdict(describe_reader(settings))
+    info["probe"] = probe_state()
+    return info
+
+
 @router.get("/ready")
 def get_ready(session: Session = Depends(get_db)):
     """Readiness for a load balancer or Docker: 200 when the server can do real work, else 503."""
@@ -72,4 +84,5 @@ def get_health(session: Session = Depends(get_db)):
         "version": "0.1",
         "env": settings.env,
         "auth": settings.auth_mode,
+        "reader_detail": reader_detail(),
     }

@@ -17,3 +17,4 @@ Real output from the test run after each numbered item (summary lines pasted as 
 | C10 Docker deployment | part-c-ops | `python tasks.py test` + manual Docker run of DEPLOY.md steps 3-8 | `261 passed, 1 warning in 29.58s`; container `healthy`, `/api/ready` 200, uid 10001, restore round trip OK, refused with default secret |
 | C11 CI (ruff, audits, e2e, Docker) | part-c-ops | `ruff check .` / `pytest` / `pip-audit` / `npm audit --audit-level=high` / `e2e` / Docker smoke | `All checks passed!` / `261 passed, 1 warning in 30.85s` / `No known vulnerabilities found` / exit 0 (2 moderate, assessed) / development `6 passed (21.8s)`, production `2 passed (3.6s)` / healthy, uid 10001, passcode 401 |
 | R1 reader interface (mock, gemini_demo, custom stub) | part-5-reader | `python tasks.py test` | `278 passed, 1 warning in 30.35s` |
+| R2 reader start-up probe in /api/health | part-5-reader | `python tasks.py test` | `283 passed, 1 warning in 31.04s` |

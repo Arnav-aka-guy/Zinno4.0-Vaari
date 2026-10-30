@@ -14,6 +14,7 @@ import app.models  # ensure models are registered
 from app.config import settings
 from app.db import get_engine, get_session_factory
 from app.errors import setup_error_handlers
+from app.intake.probe import start_probe_in_background
 from app.logging_setup import RequestContextMiddleware, configure_logging, log_event
 from app.migrate import ensure_schema
 from app.ratelimit import RateLimitMiddleware
@@ -44,6 +45,8 @@ async def lifespan(app: FastAPI):
         raise
     revision = ensure_schema(get_engine())
     log_event("startup", event="startup", env=settings.env, auth=settings.auth_mode, reader=settings.reader, revision=revision)
+    if settings.reader_probe:
+        start_probe_in_background(settings)
     session_factory = get_session_factory()
     with session_factory() as session:
         get_or_create_home_centre(session)

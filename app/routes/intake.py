@@ -42,12 +42,20 @@ def record_reader_failure() -> None:
 def clear_reader_failure() -> None:
     global _last_reader_failure_at
     _last_reader_failure_at = None
+    from app.intake.probe import probe_state, reset
+
+    if probe_state().get("status") == "failed":
+        reset()
 
 
 def get_reader_status_for_health() -> str:
     """Return 'mock', 'hosted', 'custom' or 'down' (down if the last call failed within 5 minutes or it is off)."""
     global _last_reader_failure_at
     now = clock.now_utc()
+    from app.intake.probe import probe_state
+
+    if probe_state().get("status") == "failed" and _last_reader_failure_at is not None:
+        return "down"  # a failed start-up probe stays visible until a real call succeeds
     if _last_reader_failure_at is not None:
         if (now - _last_reader_failure_at) <= timedelta(minutes=5):
             return "down"

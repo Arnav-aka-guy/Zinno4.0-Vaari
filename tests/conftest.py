@@ -13,6 +13,7 @@ from sqlalchemy.orm import sessionmaker
 os.environ["VAARI_DEMO_PASSCODE"] = "test-passcode"
 os.environ["VAARI_TZ"] = "Asia/Kolkata"
 os.environ["VAARI_READER"] = "mock"
+os.environ["VAARI_READER_PROBE"] = "false"
 
 from app.db import get_db, override_db
 from app.main import app
