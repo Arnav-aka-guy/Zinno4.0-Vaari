@@ -163,7 +163,9 @@ class HostedVisionReader:
             api_key = os.environ.get("GEMINI_API_KEY", "").strip()
             if not api_key:
                 raise ReaderUnavailable("GEMINI_API_KEY is not set.")
-            model_name = model or "gemini-2.5-flash"
+            model_name = model or "gemini-3.5-flash-lite"
+            if not model_name.startswith("gemini-") and not model_name.startswith("models/"):
+                model_name = f"gemini-{model_name}"
 
             # Use google-genai SDK if installed, else direct REST via httpx
             try:
