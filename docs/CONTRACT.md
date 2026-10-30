@@ -96,10 +96,10 @@ vaari/
 | `VAARI_DEMO_PLOT_LAT`, `VAARI_DEMO_PLOT_LON` | the centre's position | Where the live demo job's plot is. Set it to the hall on the day |
 | `VAARI_CENTRE_LAT`, `VAARI_CENTRE_LON`, `VAARI_CENTRE_NAME`, `VAARI_CENTRE_PHONE` | a demo centre | The home centre for the seed |
 | `VAARI_PUBLIC_BASE_URL` | empty | The tunnel URL, used to build full record and driver links |
-| `VAARI_READER` | `mock` | Phase 3: `mock` or `hosted` |
+| `VAARI_READER` | `mock` | Phase 3: `mock` or `hosted`. *(Pilot v0.2, §15.13: `mock`, `gemini_demo` or `custom`; `hosted` still means `gemini_demo`.)* |
 | `VAARI_ALLOW_HOSTED_READER` | `false` | Phase 3: must be `true` before any image goes to a hosted model |
-| `VAARI_VISION_PROVIDER` | `gemini` | Phase 3: `gemini` or `anthropic` |
-| `VAARI_VISION_MODEL` | empty | Phase 3: a current vision model name from the provider |
+| `VAARI_VISION_PROVIDER` | `gemini` | Phase 3: `gemini` or `anthropic`. *(Pilot v0.2: `gemini` only.)* |
+| `VAARI_VISION_MODEL` | empty | Phase 3: a current vision model name from the provider. *(Pilot v0.2: required when the hosted reader is on; no default in the code.)* |
 | `GEMINI_API_KEY`, `ANTHROPIC_API_KEY` | empty | Phase 3 |
 | `VAARI_READER_TIMEOUT_S` | `20` | Phase 3 |
 
@@ -491,3 +491,12 @@ With `VAARI_ENV=production` the app refuses to start, and lists every problem, w
 ### 15.12 CI (C11)
 
 `.github/workflows/ci.yml` runs on every push and pull request: `ruff check .` (rules in `ruff.toml`: pycodestyle, pyflakes, bugbear, import order), pytest plus a check that unsafe production settings are refused, `pip-audit -r requirements.txt`, `npm audit --audit-level=high` (the two moderate react-router advisories are assessed in `notes/npm-audit.md`), the web build, the Playwright suite through `python tasks.py e2e` (both passes), and a Docker build with a smoke test (refuses without a secret, becomes healthy, runs as non-root, refuses the passcode). `web/playwright.config.ts` takes an optional `PLAYWRIGHT_CHROMIUM_EXECUTABLE` for machines with a preinstalled Chromium.
+
+### 15.13 Register reader interface (Part 5)
+
+- `app/intake/reader.py` defines `RegisterReader.read(image, media_type) -> RegisterDraft` and `get_reader()`. Nothing else in the app imports a concrete reader.
+- **Implementations.** `mock` (default; refuses in production), `gemini_demo` (`app/intake/hosted.py`, Google Gemini, DEMO ONLY, off unless `VAARI_ALLOW_HOSTED_READER=true`), and `custom` (`app/intake/custom.py`, a stub client for a future model at `VAARI_CUSTOM_READER_URL`, optional `VAARI_CUSTOM_READER_TOKEN`). `VAARI_READER=hosted` is kept as an alias of `gemini_demo`.
+- **No hard-coded model names.** The Gemini reader has no default model; `VAARI_VISION_MODEL` is required when it is on, and start-up refuses (any mode) without it or without `GEMINI_API_KEY`. The key is sent in the `x-goog-api-key` header, never in the URL. Error text keeps the HTTP status only, never the provider's body.
+- **Anthropic provider removed** (the brief names Gemini for the demo). `VAARI_VISION_PROVIDER` accepts `gemini` only; `ANTHROPIC_API_KEY` is gone from `.env.example`.
+- **Custom reader contract.** `POST` JSON `{image_base64, media_type, prompt_version, fields}` → the same `{rows: [{row, fields, confidence}]}` JSON as the hosted reader. `VAARI_READER=custom` needs the URL; production refuses a plain-`http://` URL unless it is on this machine or a private network. It is not treated as a third party.
+- **Health.** `reader` may also be `custom` (additive enum value).

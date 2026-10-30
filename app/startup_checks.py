@@ -24,8 +24,46 @@ class UnsafeConfigError(RuntimeError):
 
 
 def _hosted_reader_requested(s: Any) -> bool:
-    reader = str(getattr(s, "reader", "mock")).strip().lower()
-    return bool(getattr(s, "allow_hosted_reader", False)) or reader not in ("mock", "")
+    """True when a reader that sends images to a third party is switched on."""
+    from app.intake.reader import reader_name
+
+    return bool(getattr(s, "allow_hosted_reader", False)) or reader_name(s) == "gemini_demo"
+
+
+def reader_problems(s: Any) -> list[str]:
+    """Reader settings that cannot work, in any mode."""
+    import os
+    from ipaddress import ip_address
+    from urllib.parse import urlparse
+
+    from app.intake.reader import READER_NAMES, reader_name
+
+    problems: list[str] = []
+    name = reader_name(s)
+    if name not in READER_NAMES:
+        problems.append(f"VAARI_READER='{name}' is not a reader. Use one of: {', '.join(READER_NAMES)}.")
+    if name == "gemini_demo" and getattr(s, "allow_hosted_reader", False):
+        if not str(getattr(s, "vision_model", "") or "").strip():
+            problems.append(
+                "VAARI_VISION_MODEL is required when the hosted reader is on. Name a current Gemini vision model; "
+                "there is no built-in default."
+            )
+        if not os.environ.get("GEMINI_API_KEY", "").strip():
+            problems.append("GEMINI_API_KEY is empty. Put it in .env (never in the code or the repo).")
+    if name == "custom":
+        url = str(getattr(s, "custom_reader_url", "") or "").strip()
+        if not url:
+            problems.append("VAARI_READER=custom needs VAARI_CUSTOM_READER_URL.")
+        elif getattr(s, "is_production", False):
+            parsed = urlparse(url)
+            host = parsed.hostname or ""
+            try:
+                private = ip_address(host).is_private or ip_address(host).is_loopback
+            except ValueError:
+                private = host in ("localhost",)
+            if parsed.scheme != "https" and not private:
+                problems.append("VAARI_CUSTOM_READER_URL must use https:// unless it is on this machine or a private network.")
+    return problems
 
 
 def config_problems(s: Any) -> list[str]:
@@ -40,6 +78,8 @@ def config_problems(s: Any) -> list[str]:
         problems.append(
             f"VAARI_PHOTO_STORE={store} is not built. Only 'local' works today (photos under VAARI_DATA_DIR)."
         )
+
+    problems.extend(reader_problems(s))
 
     if env != "production":
         return problems

@@ -188,6 +188,15 @@ class Settings:
         return os.environ.get("VAARI_VISION_MODEL", "")
 
     @property
+    def custom_reader_url(self) -> str:
+        """Endpoint of a future custom reader (VAARI_READER=custom)."""
+        return os.environ.get("VAARI_CUSTOM_READER_URL", "").strip()
+
+    @property
+    def custom_reader_token(self) -> str:
+        return os.environ.get("VAARI_CUSTOM_READER_TOKEN", "").strip()
+
+    @property
     def reader_timeout_s(self) -> int:
         return int(os.environ.get("VAARI_READER_TIMEOUT_S", "20"))
 

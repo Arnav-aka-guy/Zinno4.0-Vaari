@@ -17,7 +17,7 @@ from app.errors import VaariError
 from app.event_log import log_event
 from app.evidence.photos import read_image_upload
 from app.intake.prompt import PROMPT_VERSION
-from app.intake.reader import ReaderUnavailable, get_reader
+from app.intake.reader import ReaderUnavailable, get_reader, reader_name
 from app.intake.validate import has_blocking_issues, validate_row
 from app.logging_setup import log_event as app_log_event
 from app.models import IntakePage, RegisterDraft
@@ -45,21 +45,23 @@ def clear_reader_failure() -> None:
 
 
 def get_reader_status_for_health() -> str:
-    """Return 'mock', 'hosted', or 'down' (down if last call failed within 5 minutes or misconfigured)."""
+    """Return 'mock', 'hosted', 'custom' or 'down' (down if the last call failed within 5 minutes or it is off)."""
     global _last_reader_failure_at
     now = clock.now_utc()
     if _last_reader_failure_at is not None:
         if (now - _last_reader_failure_at) <= timedelta(minutes=5):
             return "down"
 
-    mode = settings.reader.strip().lower()
+    mode = reader_name(settings)
     if mode == "mock":
         # The mock refuses in production (it would invent rows), so show the fallback.
         return "down" if settings.is_production else "mock"
-    if mode == "hosted":
+    if mode == "gemini_demo":
         if not settings.allow_hosted_reader:
             return "down"
         return "hosted"
+    if mode == "custom":
+        return "custom" if settings.custom_reader_url else "down"
     return "down"
 
 

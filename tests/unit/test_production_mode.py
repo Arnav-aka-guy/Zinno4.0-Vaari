@@ -71,6 +71,9 @@ def test_production_hosted_reader_with_explicit_override(prod):
     prod.setenv("VAARI_READER", "hosted")
     prod.setenv("VAARI_ALLOW_HOSTED_READER", "true")
     prod.setenv("VAARI_ALLOW_HOSTED_READER_IN_PRODUCTION", "true")
+    # Part 5: the hosted reader also needs a model name and a key before it may start.
+    prod.setenv("VAARI_VISION_MODEL", "a-current-gemini-model")
+    prod.setenv("GEMINI_API_KEY", "synthetic-test-key")
     assert config_problems(settings) == []
 
 
