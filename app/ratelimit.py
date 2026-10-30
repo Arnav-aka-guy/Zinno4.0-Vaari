@@ -11,11 +11,11 @@ than one server process, each keeps its own counts (see docs/DEPLOY.md).
   which accounts exist.
 """
 
-from collections import deque
 import json
 import math
 import re
 import threading
+from collections import deque
 
 from app import clock
 from app.config import settings

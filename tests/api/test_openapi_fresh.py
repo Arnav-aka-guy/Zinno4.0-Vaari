@@ -16,7 +16,6 @@ import pathlib
 
 import pytest
 
-
 SCHEMA_FILE = pathlib.Path(__file__).parent.parent.parent / "docs" / "openapi.json"
 
 # Number of paths the spec MUST have (update only when routes are intentionally added).

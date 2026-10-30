@@ -1,8 +1,10 @@
 """Unit tests for Step 03: HostedVisionReader (no network in tests)."""
 
-from datetime import date
 import json
+from datetime import date
+
 import pytest
+
 from app.intake.hosted import HostedVisionReader
 from app.intake.reader import ReaderUnavailable
 

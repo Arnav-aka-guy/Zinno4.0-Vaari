@@ -1,11 +1,11 @@
 """Common route helpers and model serializers."""
 
 from sqlalchemy.orm import Session
+
 from app import clock
 from app.config import settings
 from app.enums import from_x100
 from app.models import Centre, Farmer, Machine, Plot, Request, ServiceRecord, Slot
-from app.tokens import link_state
 from app.schemas import (
     ExplanationBrief,
     FarmerBrief,
@@ -17,6 +17,7 @@ from app.schemas import (
     SlotBrief,
     SlotOut,
 )
+from app.tokens import link_state
 
 
 def get_or_create_home_centre(session: Session) -> Centre:

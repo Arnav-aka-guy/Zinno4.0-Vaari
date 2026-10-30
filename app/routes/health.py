@@ -3,6 +3,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy import text
 from sqlalchemy.orm import Session
+
 from app import clock
 from app.config import settings
 from app.db import get_db

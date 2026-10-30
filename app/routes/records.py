@@ -1,8 +1,10 @@
 """API routes for service records and verification (Contract Section 11)."""
 
 from typing import Any
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
+
 from app import clock
 from app.db import get_db
 from app.enums import from_x100

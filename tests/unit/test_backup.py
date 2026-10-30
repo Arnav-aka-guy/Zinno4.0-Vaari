@@ -173,8 +173,9 @@ def test_restore_of_an_older_schema_is_upgraded(live, tmp_path):
 
 def test_prune_keeps_the_newest(live, monkeypatch):
     db, data, out = live
-    from app import clock
     from datetime import timedelta
+
+    from app import clock
 
     base = clock.now_utc()
     made = []

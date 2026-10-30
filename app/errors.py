@@ -1,6 +1,7 @@
 """Error classes and handlers for Vaari adhering strictly to the contract error shape."""
 
 from typing import Any
+
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse

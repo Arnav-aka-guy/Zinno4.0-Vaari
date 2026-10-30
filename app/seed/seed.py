@@ -19,15 +19,17 @@ Total: exactly 28 scheduled, 7 will miss, 5 needs info = 40 requests.
 """
 
 import json
-from pathlib import Path
 import shutil
 import sys
 import time
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
+
 from sqlalchemy.orm import Session
+
 from app import clock
 from app.config import settings
-from app.db import Base, get_db, get_engine, get_session_factory
+from app.db import get_engine, get_session_factory
 from app.enums import to_x100
 from app.event_log import log_event
 from app.models import Centre, Farmer, Machine, Plot, Request, Village
@@ -59,7 +61,6 @@ def load_villages(session: Session, centre_lat: float, centre_lon: float) -> dic
 
 def seed_data(session: Session) -> dict[str, int]:
     today = clock.today()
-    now = clock.now_utc()
 
     # 1. Centres
     # Home centre

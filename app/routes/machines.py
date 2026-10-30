@@ -2,6 +2,7 @@
 
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
+
 from app.auth import ROLE_OPERATOR, Principal, require_operator, require_staff
 from app.db import get_db
 from app.enums import MachineStatus, to_x100
@@ -9,8 +10,8 @@ from app.errors import VaariError
 from app.event_log import log_event
 from app.models import Machine, Request, Slot
 from app.routes.common import get_or_create_home_centre, serialize_machine
-from app.schemas import MachineIn, MachinePatch, MachineOut
 from app.scheduler.service import run_for_centre
+from app.schemas import MachineIn, MachineOut, MachinePatch
 from app.tokens import driver_link_expiry, new_token
 
 router = APIRouter(prefix="/machines", tags=["machines"])

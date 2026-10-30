@@ -13,8 +13,8 @@ All secret comparisons use ``hmac.compare_digest``.
 """
 
 import contextvars
-from dataclasses import dataclass, field
 import hmac
+from dataclasses import dataclass, field
 
 from fastapi import Depends, Header
 from sqlalchemy.orm import Session

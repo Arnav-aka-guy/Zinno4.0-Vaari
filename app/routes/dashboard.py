@@ -1,12 +1,14 @@
 """Dashboard summary and usage CSV API routes (Contract Section 11 & Step 07 / Step 10)."""
 
 import csv
-from datetime import date, timedelta
 import io
+from datetime import date, timedelta
 from typing import Any
+
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
+
 from app import clock
 from app.auth import Principal, require_staff
 from app.db import get_db

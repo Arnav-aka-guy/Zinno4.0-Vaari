@@ -10,8 +10,8 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
-from app.db import Base, get_sqlite_url
 import app.models  # noqa: F401  (register every table)
+from app.db import Base, get_sqlite_url
 
 config = context.config
 if config.config_file_name is not None and config.attributes.get("configure_logging", True):

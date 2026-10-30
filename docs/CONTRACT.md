@@ -487,3 +487,7 @@ With `VAARI_ENV=production` the app refuses to start, and lists every problem, w
 - `docs/DEPLOY.md`: fresh clone to running server, accounts, HTTPS, links, backups, restore and upgrades.
 - **Mock reader in production.** `MockRegisterReader` refuses when `VAARI_ENV=production`, because it returns the same invented rows for any photo. Register upload then gives 503 `READER_UNAVAILABLE` and keeps the photo, so staff type the rows beside it. `/api/health` reports `reader: "down"` in that case (an existing enum value).
 - A start-up refusal is logged as one JSON line, `event: "refused_to_start"`, listing every problem.
+
+### 15.12 CI (C11)
+
+`.github/workflows/ci.yml` runs on every push and pull request: `ruff check .` (rules in `ruff.toml`: pycodestyle, pyflakes, bugbear, import order), pytest plus a check that unsafe production settings are refused, `pip-audit -r requirements.txt`, `npm audit --audit-level=high` (the two moderate react-router advisories are assessed in `notes/npm-audit.md`), the web build, the Playwright suite through `python tasks.py e2e` (both passes), and a Docker build with a smoke test (refuses without a secret, becomes healthy, runs as non-root, refuses the passcode). `web/playwright.config.ts` takes an optional `PLAYWRIGHT_CHROMIUM_EXECUTABLE` for machines with a preinstalled Chromium.

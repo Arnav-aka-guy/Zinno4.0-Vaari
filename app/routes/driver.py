@@ -2,8 +2,10 @@
 
 from datetime import date
 from typing import Any
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
+
 from app import clock
 from app.db import get_db
 from app.errors import VaariError

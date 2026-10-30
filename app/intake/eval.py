@@ -5,9 +5,10 @@ that has a matching <stem>.expected.json, reporting COUNTS (never percentages).
 """
 
 import json
-from pathlib import Path
 import time
+from pathlib import Path
 from typing import Any
+
 from app.config import settings
 from app.intake.reader import get_reader
 

@@ -3,6 +3,7 @@
 import os
 import tempfile
 from pathlib import Path
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, event
@@ -13,8 +14,8 @@ os.environ["VAARI_DEMO_PASSCODE"] = "test-passcode"
 os.environ["VAARI_TZ"] = "Asia/Kolkata"
 os.environ["VAARI_READER"] = "mock"
 
+from app.db import get_db, override_db
 from app.main import app
-from app.db import override_db, get_db, Base
 
 
 @pytest.fixture(autouse=True)

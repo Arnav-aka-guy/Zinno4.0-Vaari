@@ -1,7 +1,9 @@
 """Append-only audit event log for Vaari."""
 
 from typing import Any
+
 from sqlalchemy.orm import Session
+
 from app import clock
 from app.models import EventLog
 

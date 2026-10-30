@@ -1,7 +1,7 @@
 """SQLAlchemy ORM models for Vaari (Contract Section 6)."""
 
 import json
-from datetime import date, datetime
+
 from sqlalchemy import (
     Boolean,
     Column,
@@ -14,6 +14,7 @@ from sqlalchemy import (
     Text,
     TypeDecorator,
 )
+
 from app.db import Base
 
 

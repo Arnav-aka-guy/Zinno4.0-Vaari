@@ -3,9 +3,10 @@
 import hashlib
 import json
 from typing import Any
+
 from sqlalchemy.orm import Session
+
 from app import clock
-from app.config import settings
 from app.models import Evidence, Request, ServiceRecord, Slot
 from app.tokens import new_token, record_link_expiry
 

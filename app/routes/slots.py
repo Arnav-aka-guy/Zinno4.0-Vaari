@@ -2,10 +2,19 @@
 
 from datetime import date
 from typing import Any
+
 from fastapi import APIRouter, Depends, File, Form, Header, Query, Response, UploadFile, status
 from sqlalchemy.orm import Session
+
 from app import clock
-from app.auth import ROLE_OPERATOR, Principal, get_optional_principal, get_slot_caller, require_operator, verify_slot_auth
+from app.auth import (
+    ROLE_OPERATOR,
+    Principal,
+    get_optional_principal,
+    get_slot_caller,
+    require_operator,
+    verify_slot_auth,
+)
 from app.config import settings
 from app.db import get_db
 from app.errors import VaariError
@@ -13,8 +22,8 @@ from app.evidence.lifecycle import done_slot, not_served_slot, start_slot
 from app.messaging.render import render_slot_message
 from app.models import Centre, Farmer, Machine, MessageLog, Plot, Request, Slot
 from app.routes.common import serialize_slot
-from app.tokens import require_live_link
 from app.schemas import EvidenceDetail, MessageOpenedIn, NotServedIn, SlotEvidenceOut, SlotOut
+from app.tokens import require_live_link
 
 router = APIRouter(prefix="/slots", tags=["slots"])
 

@@ -8,9 +8,9 @@ from alembic.autogenerate import compare_metadata
 from alembic.runtime.migration import MigrationContext
 from sqlalchemy import create_engine, inspect
 
+import app.models  # noqa: F401
 from app.db import Base
 from app.migrate import alembic_config, current_revision, ensure_schema, head_revision, is_at_head
-import app.models  # noqa: F401
 
 
 @pytest.fixture

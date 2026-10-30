@@ -2,8 +2,10 @@
 
 from datetime import date
 from typing import Any
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
+
 from app.auth import Principal, require_operator, require_staff
 from app.config import settings
 from app.db import get_db

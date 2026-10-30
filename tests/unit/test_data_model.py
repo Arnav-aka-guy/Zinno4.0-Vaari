@@ -3,12 +3,12 @@
 import pytest
 from pydantic import ValidationError
 from sqlalchemy import inspect
-from app.db import Base, get_engine
+
+from app.db import get_engine
 from app.enums import from_x100, to_x100
 from app.event_log import log_event
 from app.models import EventLog
-from app.schemas import RequestIn, validate_acres_val, validate_phone_str
-
+from app.schemas import RequestIn
 
 EXPECTED_TABLES = {
     "village": {"id", "name", "lat", "lon"},

@@ -7,7 +7,8 @@ import pytest
 
 from app import clock
 from app.auth import secrets_equal
-from app.cli_users import create_user, disable_user, list_users, main as users_main
+from app.cli_users import create_user, disable_user, list_users
+from app.cli_users import main as users_main
 from app.models import EventLog, UserAccount
 
 PW_OP = "operator-password-123"

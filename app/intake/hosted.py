@@ -5,12 +5,13 @@ No real register page may ever be sent to a hosted model.
 """
 
 import base64
-from datetime import date
 import json
 import os
 import re
 import time
+from datetime import date
 from typing import Any, Callable
+
 import httpx
 
 from app.intake.prompt import (
@@ -209,7 +210,7 @@ class HostedVisionReader:
                 with httpx.Client(timeout=timeout_s) as http_client:
                     resp = http_client.post(url, json=payload)
                     if resp.status_code != 200:
-                        raise ReaderUnavailable(f"Gemini HTTP {resp.status_code}: {resp.text[:200]}")
+                        raise ReaderUnavailable(f"Gemini HTTP {resp.status_code}: {resp.text[:200]}") from None
                     data = resp.json()
                     return data["candidates"][0]["content"]["parts"][0]["text"]
 
@@ -279,7 +280,7 @@ class HostedVisionReader:
                     if resp.status_code != 200:
                         raise ReaderUnavailable(
                             f"Anthropic HTTP {resp.status_code}: {resp.text[:200]}"
-                        )
+                        ) from None
                     data = resp.json()
                     return data["content"][0]["text"]
 

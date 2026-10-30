@@ -1,19 +1,21 @@
 """API routes for managing requests (Contract Section 11)."""
 
 from datetime import date
+
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
+
 from app import clock
-from app.auth import Principal, require_operator, require_staff
+from app.auth import Principal, require_operator
 from app.db import get_db
 from app.enums import ServiceType, to_x100
 from app.errors import VaariError
 from app.event_log import log_event
 from app.models import Farmer, Plot, Request, Slot, Village
 from app.routes.common import get_or_create_home_centre, serialize_request
-from app.schemas import RequestIn, RequestPatch, RequestOut
 from app.scheduler.dates import compute_dates
 from app.scheduler.service import run_for_centre
+from app.schemas import RequestIn, RequestOut, RequestPatch
 
 router = APIRouter(prefix="/requests", tags=["requests"])
 

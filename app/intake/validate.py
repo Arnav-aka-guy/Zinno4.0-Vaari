@@ -1,8 +1,8 @@
 """Deterministic validation and normalization of register draft rows (Step 02)."""
 
+import re
 from datetime import date, timedelta
 from decimal import Decimal
-import re
 from typing import Any
 
 LOW_CONFIDENCE_THRESHOLD: float = 0.8

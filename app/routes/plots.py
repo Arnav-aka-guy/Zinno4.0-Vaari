@@ -2,8 +2,9 @@
 
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
+
 from app import clock
-from app.auth import Principal, require_operator, require_staff
+from app.auth import Principal, require_operator
 from app.db import get_db
 from app.enums import to_x100
 from app.errors import VaariError
@@ -52,7 +53,7 @@ def create_plot(
                 message=f"Invalid plot polygon: {exc}",
                 http_status=422,
                 details={"field": "geojson"},
-            )
+            ) from exc
 
         if payload.acres is not None and poly_acres > 0:
             diff_ratio = abs(payload.acres - poly_acres) / poly_acres
