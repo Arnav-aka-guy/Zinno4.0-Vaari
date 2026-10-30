@@ -5,7 +5,7 @@ import hashlib
 from pathlib import Path
 from typing import Any
 from fastapi import APIRouter, Depends, File, UploadFile, status
-from fastapi.responses import FileResponse
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from app import clock
@@ -15,6 +15,9 @@ from app.db import get_db
 from app.enums import ServiceType
 from app.errors import VaariError
 from app.event_log import log_event
+from app.evidence.photos import read_image_upload
+from app.storage import get_photo_store
+from app.storage.sanitize import sanitize_image
 from app.intake.prompt import PROMPT_VERSION
 from app.intake.reader import ReaderUnavailable, get_reader
 from app.intake.validate import has_blocking_issues, validate_row
@@ -60,8 +63,11 @@ def get_reader_status_for_health() -> str:
 
 async def _validate_and_save_register_photo(
     file: UploadFile | None,
-) -> tuple[str, str, str]:
-    """Validate size and magic bytes, save under data/register_pages/, return (path, sha256, media_type)."""
+) -> tuple[str, str, bytes]:
+    """Validate, strip metadata and re-encode a register photo, store it.
+
+    Returns (stored ref, sha256 of the stored JPEG, the stored JPEG bytes).
+    """
     if file is None:
         raise VaariError(
             error_code="VALIDATION_ERROR",
@@ -70,49 +76,11 @@ async def _validate_and_save_register_photo(
             details={"field": "photo"},
         )
 
-    max_bytes = int(settings.max_photo_mb * 1024 * 1024)
-    raw = await file.read(max_bytes + 1)
-    if len(raw) > max_bytes:
-        raise VaariError(
-            error_code="PAYLOAD_TOO_LARGE",
-            message=f"Photo exceeds {settings.max_photo_mb} MB limit.",
-            http_status=413,
-            details={"max_mb": settings.max_photo_mb},
-        )
-
-    if len(raw) == 0:
-        raise VaariError(
-            error_code="VALIDATION_ERROR",
-            message="Uploaded file is empty.",
-            http_status=422,
-            details={"field": "photo"},
-        )
-
-    if raw.startswith(b"\xff\xd8\xff"):
-        ext = "jpg"
-        media_type = "image/jpeg"
-    elif raw.startswith(b"\x89PNG\r\n\x1a\n"):
-        ext = "png"
-        media_type = "image/png"
-    elif raw.startswith(b"RIFF") and len(raw) >= 12 and raw[8:12] == b"WEBP":
-        ext = "webp"
-        media_type = "image/webp"
-    else:
-        raise VaariError(
-            error_code="VALIDATION_ERROR",
-            message="Uploaded file is not a valid JPEG, PNG or WebP image.",
-            http_status=422,
-            details={"field": "photo"},
-        )
-
-    sha = hashlib.sha256(raw).hexdigest()
-    reg_dir = Path(settings.data_dir) / "register_pages"
-    reg_dir.mkdir(parents=True, exist_ok=True)
-    filename = f"register_{sha[:12]}.{ext}"
-    target_path = reg_dir / filename
-    target_path.write_bytes(raw)
-
-    return f"data/register_pages/{filename}", sha, media_type
+    raw = await read_image_upload(file)
+    clean = sanitize_image(raw)
+    sha = hashlib.sha256(clean).hexdigest()
+    ref = get_photo_store().put("register_pages", f"register_{sha[:12]}.jpg", clean)
+    return ref, sha, clean
 
 
 def _serialize_intake_page(session: Session, page: IntakePage) -> dict[str, Any]:
@@ -145,7 +113,8 @@ async def upload_register_photo(
     session: Session = Depends(get_db),
     _principal: Principal = Depends(require_operator),
 ) -> dict[str, Any]:
-    image_path, image_sha256, media_type = await _validate_and_save_register_photo(photo)
+    image_path, image_sha256, raw_bytes = await _validate_and_save_register_photo(photo)
+    media_type = "image/jpeg"
 
     home_centre = get_or_create_home_centre(session)
     now = clock.now_utc()
@@ -165,8 +134,6 @@ async def upload_register_photo(
     session.add(page)
     session.flush()
 
-    disk_path = Path(settings.data_dir) / "register_pages" / Path(image_path).name
-    raw_bytes = disk_path.read_bytes()
 
     try:
         reader = get_reader(settings)
@@ -254,13 +221,11 @@ def get_intake_image(
             http_status=404,
         )
 
-    candidate = Path(page.image_path)
-    if not candidate.exists():
-        candidate = Path(settings.data_dir) / "register_pages" / Path(page.image_path).name
-    if not candidate.exists():
+    store = get_photo_store()
+    if not page.image_path or not store.exists(page.image_path):
         raise VaariError("NOT_FOUND", "Register page image file not found.", 404)
 
-    return FileResponse(candidate)
+    return Response(content=store.get(page.image_path), media_type="image/jpeg")
 
 
 @router.post("/{id}/confirm", status_code=status.HTTP_201_CREATED)
@@ -429,6 +394,7 @@ def confirm_intake(
 def purge_expired_register_images(session: Session, dry_run: bool = False) -> list[str]:
     """Delete register page images past image_delete_after and return deleted paths."""
     now = clock.now_utc()
+    store = get_photo_store()
     pages = session.query(IntakePage).all()
     deleted: list[str] = []
 
@@ -439,13 +405,10 @@ def purge_expired_register_images(session: Session, dry_run: bool = False) -> li
         if del_after.tzinfo is None:
             del_after = del_after.replace(tzinfo=timezone.utc)
         if del_after <= now and p.image_path:
-            img_file = Path(p.image_path)
-            if not img_file.exists():
-                img_file = Path(settings.data_dir) / "register_pages" / Path(p.image_path).name
-            if img_file.exists():
-                deleted.append(str(img_file))
+            if store.exists(p.image_path):
+                deleted.append(p.image_path)
                 if not dry_run:
-                    img_file.unlink(missing_ok=True)
+                    store.delete(p.image_path)
                     log_event(
                         session=session,
                         actor="system",

@@ -11,6 +11,7 @@ All notable changes are recorded here. The format follows Keep a Changelog, and 
 - **A4 Link expiry and revocation**: driver and record links expire; operators rotate or turn off driver links and turn off or reissue record links; 410 `LINK_EXPIRED`.
 - **A5 CORS and security headers**: CORS only for configured origins; CSP, no-referrer, nosniff, frame DENY, Permissions-Policy, COOP/CORP, HSTS in production, `no-store` on the API.
 - **B6 Alembic migrations**: v0.1.0 baseline plus pilot revision; start-up upgrades instead of `create_all`; legacy databases are stamped and upgraded; model-vs-migration test.
+- **B7 Photo storage**: storage interface (local disk; S3 placeholder refused); every image re-encoded with EXIF/GPS stripped; hashes are of the stored file.
 
 ### Polish & Hardening Pass (29 Oct 2026)
 - **OpenAPI & Freshness Enforcement**: Regenerated `docs/openapi.json` from live application (`app.openapi()`) with LF line endings containing all 25 API paths (including `/api/intake/*` and `/api/dashboard/usage.csv`), and added an automated drift test `tests/api/test_openapi_freshness.py` that fails if committed schema is out of date.

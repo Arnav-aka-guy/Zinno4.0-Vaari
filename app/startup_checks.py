@@ -35,6 +35,12 @@ def config_problems(s: Any) -> list[str]:
     if env not in VALID_ENVS:
         problems.append(f"VAARI_ENV must be one of {', '.join(VALID_ENVS)} (got '{env}').")
         return problems
+    store = str(getattr(s, "photo_store", "local"))
+    if store != "local":
+        problems.append(
+            f"VAARI_PHOTO_STORE={store} is not built. Only 'local' works today (photos under VAARI_DATA_DIR)."
+        )
+
     if env != "production":
         return problems
 

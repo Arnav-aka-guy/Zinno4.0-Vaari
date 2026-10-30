@@ -225,18 +225,21 @@ Built from the "status and build brief for the backend work", on branches `part-
 - **A4 Link expiry and revocation.** Driver links expire after 30 days and record links after 365 (configurable). Operators can rotate or turn off a driver link (rotation also replaces the slot tokens it handed out) and turn off or reissue a record link from the Desk; the record hash never changes. 410 `LINK_EXPIRED` (`tests/api/test_link_expiry.py`, `web/e2e/links.spec.ts`).
 - **A5 CORS and security headers.** No CORS unless `VAARI_CORS_ORIGINS` names exact origins (production refuses `*` and plain http). Every response gets nosniff, frame DENY, `Referrer-Policy: no-referrer`, a Permissions-Policy, COOP/CORP and a Content-Security-Policy; API responses are `no-store`; production adds HSTS. The browser test checks the CSP blocks nothing the app loads (`tests/api/test_security_headers.py`, `web/e2e/links.spec.ts`).
 - **B6 Alembic migrations.** Baseline `0001` is exactly v0.1.0's schema; `0002` adds Part A's changes. Start-up runs `upgrade head` instead of `create_all`; an older create_all database is stamped and upgraded with its data kept. A test asserts a fresh migration matches the models, and every test database is now built by the migrations. `reset`/`seed` refuse in production without `--yes-delete-everything` (`tests/unit/test_migrations.py`).
+- **B7 Photo storage and EXIF stripping.** All photo files go through `app/storage` (`LocalDiskStore` now; an S3-compatible store is a refused placeholder). Every upload is re-encoded as a clean JPEG with orientation applied and all metadata, including GPS, removed; decompression bombs and undecodable files get 422 (`tests/unit/test_photo_storage.py`).
 
 ### Contract changes (additive only, with the reason)
 - New settings `VAARI_ENV`, `VAARI_ALLOW_HOSTED_READER_IN_PRODUCTION` (A1). See `docs/CONTRACT.md` §15.
 - A2: tables `user_account`, `auth_session`; routes `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`; error code `FORBIDDEN` (403); health fields `env`, `auth`; settings `VAARI_SECRET_KEY`, `VAARI_SESSION_HOURS`. Officers get `driver_path: ""` from `GET /api/machines` (same shape, value hidden). In production the `X-Vaari-Passcode` header is refused (a behaviour change the brief asked for). Slot actions with no credential now give 401 before 404.
 - A3: error code `RATE_LIMITED` (429, `Retry-After`); settings `VAARI_LOGIN_RATE_PER_MIN`, `VAARI_LOGIN_LOCKOUT_FAILURES`, `VAARI_LOGIN_LOCKOUT_MINUTES`, `VAARI_UPLOAD_RATE_PER_MIN`, `VAARI_TRUST_PROXY`.
 - A4: columns `machine.link_expires_at`, `machine.link_revoked_at`, `service_record.token_expires_at`, `service_record.token_revoked_at`; error `LINK_EXPIRED` (410); routes `POST /api/machines/{id}/link/rotate|revoke`, `POST /api/slots/{id}/record/revoke|reissue`; `MachineOut.driver_link_status`, `MachineOut.driver_link_expires_at`; settings `VAARI_DRIVER_LINK_DAYS`, `VAARI_RECORD_LINK_DAYS`. A database made by v0.1.0 lacks the new columns: until B6 (migrations) it needs `python tasks.py reset`; from B6 on `alembic upgrade` adds them.
+- B7 (**not additive, requested by the brief**): photo and register-page SHA-256 and size are now of the stored, metadata-free JPEG instead of the raw upload; stored files are always `.jpg`; setting `VAARI_PHOTO_STORE`. Records made before B7 still verify, because their hashes were computed from what was stored then.
 - B6: `alembic_version` table; new tasks `migrate [--status]`, `db-revision`. The contract's "No Alembic / create_all" line is replaced (the brief asked for it).
 - A5: setting `VAARI_CORS_ORIGINS`; security headers on every response (see `docs/CONTRACT.md` §15.6). No response bodies changed.
 
 ### Libraries added beyond the contract, and why
 - `argon2-cffi` (A2): argon2id password hashing, as the brief asked ("argon2 or bcrypt"). The standard library has no memory-hard password hash.
 - `alembic` (B6): schema migrations, as the brief asked.
+- `pillow` (B7): decoding, orientation and re-encoding images to strip EXIF; also used in Part 5 preprocessing. Nothing in the standard library decodes JPEG.
 
 ### What was cut
 

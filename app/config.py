@@ -85,6 +85,11 @@ class Settings:
         return [o.strip().rstrip("/") for o in raw.split(",") if o.strip()]
 
     @property
+    def photo_store(self) -> str:
+        """Where photos are kept: 'local' (VAARI_DATA_DIR). 's3' is planned, not built."""
+        return os.environ.get("VAARI_PHOTO_STORE", "local").strip().lower() or "local"
+
+    @property
     def demo_passcode(self) -> str:
         return os.environ.get("VAARI_DEMO_PASSCODE", "change-me")
 

@@ -219,7 +219,7 @@ If no alternative centre exists, the next action ends with "another centre" inst
 | `not-served` | `scheduled` or `in_progress` | Auth. A reason from the enum | 409 `INVALID_TRANSITION`, 422 |
 
 - **Auth for slot actions:** header `X-Vaari-Slot-Token` equal to the slot's `link_token`, or the operator passcode header. A slot token that belongs to a different slot gives 403 `WRONG_SLOT`. Nothing at all gives 401.
-- **Photos:** accept JPEG, PNG or WebP, checked by magic bytes, not only by content type. Save as `data/photos/{slot_id}_{kind}_{sha256[:12]}.{ext}`. SHA-256 of the raw uploaded bytes.
+- **Photos:** accept JPEG, PNG or WebP, checked by magic bytes, not only by content type. Save as `data/photos/{slot_id}_{kind}_{sha256[:12]}.{ext}`. SHA-256 of the raw uploaded bytes. *(Changed in pilot v0.2, §15.8: metadata is stripped and the image re-encoded as JPEG before saving; the name ends `.jpg` and the SHA-256 and size are of the stored file.)*
 - **Without evidence consent** the job closes with times only, and the record says "times only: no evidence consent".
 - **Checks.** At `done`, `evidence/checks.py: run_checks(session, slot) -> list[str]` returns flags. Phase 1 ships it returning `[]` and every position as `not_checked`. Phase 3 fills it in. `needs_review = len(flags) > 0`. Flags never change a status and never block.
 - **At `done`:** create the `service_record` with a new token and the hash below; set the request to `done`; write `event_log` rows for start, done, record and every check.
@@ -400,6 +400,7 @@ This section records every change made for the one-centre pilot. Each one is add
 | `VAARI_UPLOAD_RATE_PER_MIN` | `30` | Photo uploads (`register-photo`, slot `start`, slot `done`) per client address per minute |
 | `VAARI_DRIVER_LINK_DAYS` | `30` | Lifetime of a new driver link (machine token) |
 | `VAARI_RECORD_LINK_DAYS` | `365` | Lifetime of a new service-record link |
+| `VAARI_PHOTO_STORE` | `local` | Where photos are kept. Only `local` is built; any other value is refused at start-up |
 | `VAARI_CORS_ORIGINS` | empty | Exact origins allowed to call the API cross-origin. Empty = no CORS headers at all. Production refuses `*` and non-`https://` entries |
 | `VAARI_TRUST_PROXY` | `false` | Take the client address from the first `X-Forwarded-For` value. Turn on only behind your own reverse proxy |
 
@@ -459,3 +460,9 @@ With `VAARI_ENV=production` the app refuses to start, and lists every problem, w
 - `python tasks.py migrate` upgrades; `migrate --status` prints the current and head revisions.
 - A test checks that a fresh migration matches the models exactly (`alembic.autogenerate.compare_metadata` finds no difference), and the test suite's databases are built by the migrations.
 - `reset` and `seed` refuse to run when `VAARI_ENV=production` unless given `--yes-delete-everything`.
+
+### 15.8 Photo storage and metadata stripping (B7)
+
+- **Interface.** `app/storage.PhotoStore` (`put`, `get`, `exists`, `delete`). `LocalDiskStore` keeps files under `VAARI_DATA_DIR/photos/` and `VAARI_DATA_DIR/register_pages/`, written atomically. `S3CompatibleStore` is a named placeholder that raises "not built"; `VAARI_PHOTO_STORE=s3` makes start-up refuse in every mode. Nothing outside `app/storage/` touches photo files.
+- **Clean before saving.** Every uploaded image (start, done and register pages) is decoded, turned upright from its EXIF orientation, flattened to RGB and saved again as JPEG (quality 88) with no EXIF, GPS, XMP, ICC profile or comments. Images over 40 million pixels, and files that cannot be decoded, get 422 `VALIDATION_ERROR`. The same input always gives the same bytes.
+- **Not additive (asked for by the brief).** `evidence.photo_sha256`, `evidence.photo_bytes` and `intake_page.image_sha256` are now of the *stored, cleaned* file, not the raw upload, so the stored file can always be checked against the record hash. Exact-duplicate detection (`exact_duplicate_photo`) compares these hashes, so it still catches the same photo sent twice. Stored names end in `.jpg`. `GET /api/intake/{id}/image` always returns `image/jpeg`. Response shapes are unchanged.
